@@ -71,23 +71,23 @@ const SidebarContent = ({
   return (
     <div
       className={`hrms-sidebar-panel relative flex flex-col h-full ${isCollapsed ? "w-16" : "w-64"
-        } overflow-hidden border-r border-teal-300/10 bg-gradient-to-b from-[#064445] via-[#013b3c] to-[#01282a] shadow-[20px_0_60px_rgba(1,47,49,0.30)] transition-[width] duration-100 ease-out`}
+        } overflow-hidden border-r border-amber-500/15 bg-gradient-to-b from-[#2b170e] via-[#200f08] to-[#140804] shadow-[20px_0_60px_rgba(32,15,8,0.40)] transition-[width] duration-100 ease-out`}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(45,212,191,0.22),transparent_34%),radial-gradient(circle_at_85%_28%,rgba(16,185,129,0.10),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.05),transparent_24%)]" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-teal-200/25 to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(217,119,6,0.24),transparent_34%),radial-gradient(circle_at_85%_28%,rgba(180,83,9,0.15),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.06),transparent_24%)]" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-amber-400/25 to-transparent" />
 
       {/* Header */}
-      <div className="relative z-10 flex items-center justify-between border-b border-teal-100/10 px-5 py-5">
+      <div className="relative z-10 flex items-center justify-between border-b border-amber-100/10 px-5 py-5">
         {!isCollapsed && (
           <h1 className="flex items-center gap-3 text-white">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300/25 via-emerald-300/15 to-cyan-300/20 text-amber-200 shadow-lg shadow-black/15 ring-1 ring-white/15">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400/25 via-orange-400/20 to-amber-200/25 text-amber-200 shadow-lg shadow-black/15 ring-1 ring-white/15">
               <Users size={24} />
             </span>
             <span className="flex flex-col">
               <span className="text-xl font-black leading-tight tracking-tight">
                 {currentLang === "en" ? "HRMS" : "एचआरएमएस"}
               </span>
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-teal-100/70">
+              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-100/75">
                 ERP Command Center
               </span>
             </span>
@@ -128,12 +128,12 @@ const SidebarContent = ({
                 <button
                   onClick={item.toggle}
                   className={`group flex min-h-[54px] w-full items-center justify-between rounded-2xl border px-3 py-2.5 transition-all duration-200 ${item.isOpen
-                    ? "border-emerald-200/35 bg-gradient-to-r from-emerald-400/22 to-teal-300/12 text-white shadow-[0_14px_34px_rgba(16,185,129,0.14)]"
-                    : "border-transparent text-teal-50/82 hover:border-white/10 hover:bg-white/10 hover:text-white"
+                    ? "border-amber-400/35 bg-gradient-to-r from-amber-500/25 to-orange-500/15 text-white shadow-[0_14px_34px_rgba(180,83,9,0.20)]"
+                    : "border-transparent text-amber-50/85 hover:border-white/10 hover:bg-white/10 hover:text-white"
                     }`}
                 >
                   <div className="flex items-center min-w-0">
-                    <div className={`${isCollapsed ? "mx-auto" : "mr-3"} flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl ring-1 transition-all duration-200 ${item.isOpen ? "bg-emerald-300/18 text-emerald-100 shadow-lg shadow-black/15 ring-emerald-200/25" : "bg-white/9 text-teal-50 ring-white/10 group-hover:bg-white/16 group-hover:text-white group-hover:ring-white/20"}`}>
+                    <div className={`${isCollapsed ? "mx-auto" : "mr-3"} flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl ring-1 transition-all duration-200 ${item.isOpen ? "bg-amber-400/20 text-amber-100 shadow-lg shadow-black/15 ring-amber-300/30" : "bg-white/9 text-amber-50 ring-white/10 group-hover:bg-white/16 group-hover:text-white group-hover:ring-white/20"}`}>
                       <item.icon size={20} strokeWidth={2.3} />
                     </div>
                     {!isCollapsed && (
@@ -145,7 +145,7 @@ const SidebarContent = ({
                   {!isCollapsed && (
                     <div className="flex flex-shrink-0 items-center gap-2">
                       {sectionPendingCount > 0 && (
-                        <span className="rounded-full bg-emerald-400 px-2.5 py-0.5 text-xs font-black text-[#003032] shadow-md ring-1 ring-white/20">
+                        <span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-xs font-black text-[#2b170e] shadow-md ring-1 ring-white/20">
                           {sectionPendingCount}
                         </span>
                       )}
@@ -155,7 +155,7 @@ const SidebarContent = ({
                 </button>
 
                 {item.isOpen && !isCollapsed && (
-                  <div className="ml-9 mb-3 mt-2 space-y-1.5 border-l border-teal-100/15 pl-3">
+                  <div className="ml-9 mb-3 mt-2 space-y-1.5 border-l border-amber-100/15 pl-3">
                     {item.items.map((subItem) => {
                       const subPendingCount = badgeMap[subItem.path] || 0;
 
@@ -165,8 +165,8 @@ const SidebarContent = ({
                           to={subItem.path}
                           className={({ isActive }) =>
                             `relative flex items-center justify-between gap-2 rounded-2xl border px-3 py-2.5 transition-all duration-200 ${isActive
-                              ? "border-emerald-200/30 bg-emerald-300/16 text-white shadow-[0_8px_24px_rgba(0,0,0,0.16)]"
-                              : "border-transparent text-teal-50/78 hover:bg-white/10 hover:text-white hover:translate-x-0.5"
+                              ? "border-amber-300/35 bg-amber-400/20 text-white shadow-[0_8px_24px_rgba(0,0,0,0.20)]"
+                              : "border-transparent text-amber-50/80 hover:bg-white/10 hover:text-white hover:translate-x-0.5"
                             }`
                           }
                           onMouseDown={(e) => e.preventDefault()}
@@ -175,13 +175,13 @@ const SidebarContent = ({
                           }}
 
                         >
-                          <span className="absolute -left-[17px] top-1/2 h-px w-4 -translate-y-1/2 bg-teal-100/20" />
+                          <span className="absolute -left-[17px] top-1/2 h-px w-4 -translate-y-1/2 bg-amber-100/20" />
                           <span className="flex min-w-0 items-center gap-2">
-                            <span className="h-2 w-2 flex-shrink-0 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.60)]" />
+                            <span className="h-2 w-2 flex-shrink-0 rounded-full bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.70)]" />
                             <span className="text-sm leading-snug font-bold">{subItem.label}</span>
                           </span>
                           {subPendingCount > 0 && (
-                            <span className="flex-shrink-0 rounded-full bg-emerald-400 px-2.5 py-0.5 text-xs font-black text-[#003032] shadow-md ring-1 ring-white/20">
+                            <span className="flex-shrink-0 rounded-full bg-amber-400 px-2.5 py-0.5 text-xs font-black text-[#2b170e] shadow-md ring-1 ring-white/20">
                               {subPendingCount}
                             </span>
                           )}
@@ -202,8 +202,8 @@ const SidebarContent = ({
               to={item.path}
               className={({ isActive }) =>
                 `group mb-1 flex min-h-[54px] items-center justify-between rounded-2xl border px-3 py-2.5 transition-all duration-200 ${isActive
-                  ? "border-emerald-200/35 bg-gradient-to-r from-emerald-400/24 to-cyan-300/12 text-white shadow-[0_14px_34px_rgba(16,185,129,0.15)]"
-                  : "border-transparent text-teal-50/82 hover:border-white/10 hover:bg-white/10 hover:text-white hover:translate-x-1"
+                  ? "border-amber-400/35 bg-gradient-to-r from-amber-500/28 to-orange-500/15 text-white shadow-[0_14px_34px_rgba(180,83,9,0.22)]"
+                  : "border-transparent text-amber-50/85 hover:border-white/10 hover:bg-white/10 hover:text-white hover:translate-x-1"
                 }`
               }
               onClick={() => {
@@ -211,13 +211,13 @@ const SidebarContent = ({
               }}
             >
               <div className="flex items-center">
-                <span className={`${isCollapsed ? "mx-auto" : "mr-3"} flex h-10 w-10 items-center justify-center rounded-2xl bg-white/9 text-teal-50 ring-1 ring-white/10 transition-all duration-200 group-hover:bg-white/16 group-hover:text-white group-hover:ring-white/20`}>
+                <span className={`${isCollapsed ? "mx-auto" : "mr-3"} flex h-10 w-10 items-center justify-center rounded-2xl bg-white/9 text-amber-50 ring-1 ring-white/10 transition-all duration-200 group-hover:bg-white/16 group-hover:text-white group-hover:ring-white/20`}>
                   <item.icon size={20} strokeWidth={2.3} />
                 </span>
                 {!isCollapsed && <span className="font-black tracking-[0.01em]">{item.label}</span>}
               </div>
               {!isCollapsed && pendingCount > 0 && (
-                <span className="rounded-full bg-emerald-400 px-2.5 py-0.5 text-xs font-black text-[#003032] shadow-md ring-1 ring-white/20">
+                <span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-xs font-black text-[#2b170e] shadow-md ring-1 ring-white/20">
                   {pendingCount}
                 </span>
               )}
@@ -227,7 +227,7 @@ const SidebarContent = ({
       </nav>
 
       {/* Footer - Always visible */}
-      <div className="relative z-10 border-t border-teal-100/10 bg-black/10 p-4 backdrop-blur-sm">
+      <div className="relative z-10 border-t border-amber-100/10 bg-black/15 p-4 backdrop-blur-sm">
         <button
           onClick={() => {
             handleLogout();
@@ -236,7 +236,7 @@ const SidebarContent = ({
           }}
           className="group flex min-h-[50px] w-full cursor-pointer items-center rounded-2xl border border-transparent px-3 py-2.5 text-white opacity-90 transition-all duration-200 hover:border-rose-300/20 hover:bg-rose-500/15 hover:text-rose-100 hover:opacity-100"
         >
-          <span className={`${isCollapsed ? "mx-auto" : "mr-3"} flex h-10 w-10 items-center justify-center rounded-2xl bg-white/9 text-teal-50 ring-1 ring-white/10 transition-all duration-200 group-hover:bg-rose-400/20 group-hover:text-rose-100`}>
+          <span className={`${isCollapsed ? "mx-auto" : "mr-3"} flex h-10 w-10 items-center justify-center rounded-2xl bg-white/9 text-amber-50 ring-1 ring-white/10 transition-all duration-200 group-hover:bg-rose-400/20 group-hover:text-rose-100`}>
             <LogOutIcon className="transition-transform group-hover:-translate-x-0.5" size={20} strokeWidth={2.3} />
           </span>
           {!isCollapsed && <span className="font-black tracking-[0.01em]">Logout</span>}

@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useMemo } from "react";
-
-import { Search, Clock, CheckCircle, X, Upload } from "lucide-react";
+import { Search, Clock, CheckCircle, X, Upload, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
+import { uploadToCloudinary } from "../utils/cloudinaryUpload";
 
 const Joining = () => {
   // TWO DIFFERENT URLs
   const FETCH_URL = import.meta.env.VITE_GOOGLE_SHEET_URL; // For fetching data
-  const JOINING_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbwhFgVoAB4S1cKrU0iDRtCH5B2K-ol2c0RmaaEWXGqv0bdMzs3cs3kPuqOfUAR3KHYZ7g/exec"; // For form submission
+  const JOINING_SUBMIT_URL = import.meta.env.VITE_JOINING_SHEET_URL || "https://script.google.com/macros/s/AKfycbyZJjH0aHn6roRhEJ1hVPmmlJtAVRU74Fc07os6GYjKkb1xdo9wB5peDYRyTPefJn1bnQ/exec"; // For form submission
 
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -55,16 +55,17 @@ const Joining = () => {
   const fetchData = async (isBackground = false) => {
     if (!isBackground) setTableLoading(true);
     try {
+      const cb = `&_=${Date.now()}&realtime=1&cache=false&bypassCache=true`;
       // 1. Fetch Canidate_Selection
       console.log("📥 Fetching from Canidate_Selection...");
-      const candidateRes = await fetch(`${FETCH_URL}?sheet=Canidate_Selection`);
+      const candidateRes = await fetch(`${FETCH_URL}?sheet=Canidate_Selection${cb}`);
       const candidateJson = await candidateRes.json();
       console.log("✅ Canidate_Selection Raw Data:", candidateJson);
 
       // 2. Fetch JOINING_FMS
-      const joiningFmsUrl = "https://script.google.com/macros/s/AKfycbwhFgVoAB4S1cKrU0iDRtCH5B2K-ol2c0RmaaEWXGqv0bdMzs3cs3kPuqOfUAR3KHYZ7g/exec";
-      console.log("📥 Fetching from JOINING_FMS...");
-      const joiningRes = await fetch(`${joiningFmsUrl}?sheet=JOINING_FMS`);
+      const joiningFmsUrl = import.meta.env.VITE_JOINING_SHEET_URL || "https://script.google.com/macros/s/AKfycbyZJjH0aHn6roRhEJ1hVPmmlJtAVRU74Fc07os6GYjKkb1xdo9wB5peDYRyTPefJn1bnQ/exec";
+      console.log("📥 Fetching from JOINING_FMS...", joiningFmsUrl);
+      const joiningRes = await fetch(`${joiningFmsUrl}?sheet=JOINING_FMS${cb}`);
       const joiningJson = await joiningRes.json();
       console.log("✅ JOINING_FMS Raw Data:", joiningJson);
 
@@ -79,12 +80,15 @@ const Joining = () => {
           return { headers: [], rows: [] };
         }
 
-        // Find the row that contains "ID" or "Candidate Enquiry No" - that's the header row
+        // Find the row that contains "ID" or "Candidate Enquiry No" or "Employee Code" - that's the header row
         const headerRowIndex = allRows.findIndex(row =>
           row && row.some(cell =>
             cell && (
               cell.toString().trim().toUpperCase() === "ID" ||
-              cell.toString().trim().toLowerCase().includes("candidate enquiry")
+              cell.toString().trim().toUpperCase() === "EMPLOYEE CODE" ||
+              cell.toString().trim().toLowerCase().includes("candidate enquiry") ||
+              cell.toString().trim().toLowerCase().includes("candiate name") ||
+              cell.toString().trim().toLowerCase().includes("candidate name")
             )
           )
         );
@@ -114,7 +118,12 @@ const Joining = () => {
 
       // --- Logic for JOINING_FMS ---
       const getFmsIndex = (name, fixedIdx) => {
-        const idx = jHeaders.findIndex(h => h && h.toString().trim().toLowerCase() === name.toLowerCase());
+        const norm = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const idx = jHeaders.findIndex(h => {
+          if (!h) return false;
+          const hNorm = h.toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+          return hNorm === norm || hNorm.includes(norm) || norm.includes(hNorm);
+        });
         return idx !== -1 ? idx : fixedIdx;
       };
 
@@ -345,41 +354,16 @@ const Joining = () => {
       }
     },
 
-    // FILE UPLOAD using dynamic backend
+    // FILE UPLOAD using Cloudinary
     async uploadFile(file, folderId) {
       if (!file) return "";
-
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          try {
-            const base64Data = e.target.result;
-            const response = await fetch(import.meta.env.VITE_GOOGLE_SHEET_URL, {
-              method: "POST",
-              body: new URLSearchParams({
-                action: "uploadFile",
-                base64Data: base64Data,
-                fileName: file.name,
-                mimeType: file.type,
-                folderId: '1DL_Xf0_9fszToIDlZ3MMsiebDSK4OeIu2FOa1kvA8vPZCGoVKN6Johxc95FLVqP9Qp7cBp9v',
-              }),
-            });
-
-            const result = await response.json();
-            if (result.success) {
-              resolve(result.fileUrl);
-            } else {
-              console.error("Upload failed in API service:", result.error);
-              resolve("");
-            }
-          } catch (error) {
-            console.error("Upload error in service:", error);
-            resolve("");
-          }
-        };
-        reader.onerror = () => resolve("");
-        reader.readAsDataURL(file);
-      });
+      try {
+        const url = await uploadToCloudinary(file);
+        return url;
+      } catch (error) {
+        console.error("Upload error in service:", error);
+        return "";
+      }
     }
   };
 
@@ -402,8 +386,13 @@ const Joining = () => {
       const resumeUrl = await dynamicApiService.uploadFile(formData.resumeUpload, "1wofoM_7jVDj61UV1R5QoxSdQeJhZTOgJMaAOKEqrbvqO-5HUis6qoc3z65K2e2JDIPMZpC7q");
 
       const now = new Date();
-      // Format timestamp for calendar (ISO format)
-      const timestamp = now.toISOString().slice(0, 19).replace('T', ' ');
+      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const year = now.getFullYear();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const timestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 
       // Prepare data for columns B to AD (29 columns total)
       // Column A will be empty (handled by backend)
@@ -479,7 +468,7 @@ const Joining = () => {
       <div className="bg-white p-4 rounded-lg shadow">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex-1"></div>
-          <div className="flex flex-col md:flex-row items-end gap-3 flex-1 justify-end">
+          <div className="flex flex-col md:flex-row items-center gap-3 flex-1 justify-end">
             <div className="relative flex-1 max-w-xs">
               <input
                 type="text"
@@ -490,8 +479,15 @@ const Joining = () => {
               />
               <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             </div>
-
-
+            <button
+              onClick={() => fetchData(false)}
+              disabled={tableLoading}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium border border-gray-300 transition-colors disabled:opacity-60 shadow-sm"
+              title="Refresh Data"
+            >
+              <RefreshCw size={15} className={tableLoading ? "animate-spin text-navy" : ""} />
+              <span>Refresh</span>
+            </button>
           </div>
         </div>
       </div>

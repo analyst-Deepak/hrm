@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { HistoryIcon, Plus, X, Search, Pencil, Trash2 } from "lucide-react";
+import { createPortal } from "react-dom";
+import { HistoryIcon, Plus, X, Search, Pencil, Trash2, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import useAuthStore from "../store/authStore";
 
@@ -111,7 +112,10 @@ const Indent = () => {
     try {
       const cb = `&_=${Date.now()}&realtime=1&cache=false&bypassCache=true`;
       const fmsRes = await fetch(`${FETCH_URL}?sheet=FMS&action=fetch${cb}`).then(res => res.json());
-      if (fmsRes.success) setGlobalFmsData(fmsRes.data);
+      if (fmsRes.success) {
+        setGlobalFmsData(fmsRes.data);
+        toast.success("Hard refresh complete!");
+      }
     } catch (error) {
       console.error("Indent Data Fetch Error:", error);
       toast.error("Failed to load data");
@@ -176,6 +180,8 @@ const Indent = () => {
     const getIndex = (name) => headers.findIndex(h => h.toLowerCase().includes(name.toLowerCase()));
 
     const statusIdx = getIndex("Position Status");
+    let timestampIdx = getIndex("Timestamp");
+    if (timestampIdx === -1) timestampIdx = 3; // Column D in FMS sheet
     const indentIdx = getIndex("Indent No");
     const nameIdx = getIndex("Person Name");
     const postIdx = getIndex("Post");
@@ -200,6 +206,7 @@ const Indent = () => {
       .map(({ row, rowIndex }) => ({
         rowIndex,
         status: (row[statusIdx] || "OPEN").toString(),
+        timestamp: (timestampIdx !== -1 && row[timestampIdx] ? row[timestampIdx] : "").toString(),
         indentNumber: (row[indentIdx] || "").toString(),
         indenterName: (row[nameIdx] || "").toString(),
         post: (row[postIdx] || "").toString(),
@@ -239,7 +246,7 @@ const Indent = () => {
     const hours = String(now.getHours()).padStart(2, "0");
     const minutes = String(now.getMinutes()).padStart(2, "0");
     const seconds = String(now.getSeconds()).padStart(2, "0");
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
   };
 
   const handlePostInputChange = (index, e) => {
@@ -645,6 +652,15 @@ const Indent = () => {
             ))}
           </select>
           <button
+            onClick={refreshData}
+            disabled={tableLoading}
+            className="inline-flex justify-center items-center px-3.5 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 w-full sm:w-auto disabled:opacity-60"
+            title="Hard Refresh Data from Google Sheets"
+          >
+            <RefreshCw size={16} className={`mr-2 ${tableLoading ? "animate-spin text-navy" : ""}`} />
+            <span>{tableLoading ? "Refreshing..." : "Hard Refresh"}</span>
+          </button>
+          <button
             onClick={() => setShowModal(true)}
             className="inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-navy hover:bg-navy-dark transition-all duration-200 w-full sm:w-auto"
             disabled={loading}
@@ -684,24 +700,24 @@ const Indent = () => {
       </div>
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 modal-backdrop z-50 flex items-start justify-center overflow-y-auto p-2 sm:p-4 pb-20 sm:pb-28 pt-4 sm:pt-10">
-          <div className="flex w-full max-w-6xl max-h-[95vh] sm:max-h-[82vh] flex-col overflow-hidden rounded-lg bg-white shadow-lg">
-            <div className="flex shrink-0 justify-between items-center p-4 sm:p-5 border-b border-gray-200 bg-white z-20">
-              <h3 className="text-lg font-medium text-gray-800">
+      {showModal && createPortal(
+        <div className="fixed inset-0 modal-backdrop z-[99999] flex items-center justify-center p-3 sm:p-6 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+            <div className="flex shrink-0 justify-between items-center p-4 sm:p-5 border-b border-gray-200 bg-white">
+              <h3 className="text-lg font-bold text-gray-800">
                 {editingIndent ? 'Edit Indent' : 'Create Multiple Indents'}
               </h3>
               <button
                 onClick={handleCancel}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100 transition"
               >
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-              <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100 mb-4 max-w-sm">
-                <label className="block text-sm font-semibold text-indigo-900 mb-1">
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 max-h-[calc(90vh-140px)]">
+              <div className="bg-amber-50/80 p-4 rounded-lg border border-amber-200/60 mb-4 max-w-sm">
+                <label className="block text-sm font-semibold text-amber-950 mb-1">
                   Common Completion Date *
                 </label>
                 <input
@@ -1015,7 +1031,8 @@ const Indent = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
 
@@ -1034,6 +1051,9 @@ const Indent = () => {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Location
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Timestamp
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Indent Number
@@ -1068,8 +1088,9 @@ const Indent = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Completion Date
                   </th>
-                  <th className="px-4 py-2 text-sm font-medium text-gray5500 max-w-[880px] whitespace-normal break-words">
-                    Qualification                   </th>
+                  <th className="px-4 py-2 text-sm font-medium text-gray-500 max-w-[880px] whitespace-normal break-words">
+                    Qualification
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Action
                   </th>
@@ -1079,7 +1100,7 @@ const Indent = () => {
               <tbody className="divide-y divide-gray-200 bg-white">
                 {tableLoading ? (
                   <tr>
-                    <td colSpan="15" className="px-6 py-12 text-center">
+                    <td colSpan="16" className="px-6 py-12 text-center">
                       <div className="flex justify-center flex-col items-center">
                         <div className="w-6 h-6 border-4 border-blue-500 border-dashed rounded-full animate-spin mb-2"></div>
                         <span className="text-gray-600 text-sm">
@@ -1090,7 +1111,7 @@ const Indent = () => {
                   </tr>
                 ) : indentData.length === 0 ? (
                   <tr>
-                    <td colSpan="15" className="px-6 py-12 text-center">
+                    <td colSpan="16" className="px-6 py-12 text-center">
                       <p className="text-gray-500">No indent data found.</p>
                     </td>
                   </tr>
@@ -1126,6 +1147,9 @@ const Indent = () => {
                           }`}>
                             {item.location || "-"}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {item.timestamp || "-"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-navy">
                           {item.indentNumber}

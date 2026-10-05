@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 const CheckSalarySlipAndResume = () => {
     const FETCH_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
     const SUBMIT_URL = import.meta.env.VITE_SUBMIT_URL || FETCH_URL;
-    const JOINING_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbwhFgVoAB4S1cKrU0iDRtCH5B2K-ol2c0RmaaEWXGqv0bdMzs3cs3kPuqOfUAR3KHYZ7g/exec";
+    const JOINING_SUBMIT_URL = import.meta.env.VITE_JOINING_SHEET_URL || "https://script.google.com/macros/s/AKfycbyZJjH0aHn6roRhEJ1hVPmmlJtAVRU74Fc07os6GYjKkb1xdo9wB5peDYRyTPefJn1bnQ/exec";
 
     const [candidateData, setCandidateData] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
@@ -73,7 +73,23 @@ const CheckSalarySlipAndResume = () => {
         const idxDesig = getIndex("Designation") !== -1 ? getIndex("Designation") : 14;
         const idxMobile = getIndex("Contact No") !== -1 ? getIndex("Contact No") : 23;
         const idxEmail = getIndex("Email Id") !== -1 ? getIndex("Email Id") : 31;
-        const hasSheetValue = (value) => value !== null && value !== undefined && value.toString().trim() !== "";
+        const hasSheetValue = (value) => {
+            if (value === null || value === undefined) return false;
+            const str = value.toString().trim();
+            return (
+                str !== "" &&
+                str !== "0" &&
+                str !== "0.0" &&
+                str !== "00:00:00" &&
+                str !== "1899-12-30" &&
+                str !== "false" &&
+                str !== "FALSE" &&
+                str !== "#N/A" &&
+                str !== "#VALUE!" &&
+                str !== "#REF!" &&
+                str !== "NaN"
+            );
+        };
 
         const processedData = dataRows.map((row) => {
             if (!row || row.length === 0) return null;
@@ -175,7 +191,7 @@ const CheckSalarySlipAndResume = () => {
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
-            const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            const timestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 
             // Prepare data for submission
             const dataArray = [

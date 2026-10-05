@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Search, Clock, HistoryIcon, Plus, X, CheckCircle } from "lucide-react";
-
+import { Search, Clock, HistoryIcon, Plus, X, CheckCircle, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
+import { uploadToCloudinary } from "../utils/cloudinaryUpload";
 
 const OnlinePosting = () => {
 
@@ -49,7 +49,7 @@ const OnlinePosting = () => {
       setTableLoading(true);
     }
     try {
-      const cb = `&_=${Date.now()}`;
+      const cb = `&_=${Date.now()}&realtime=1&cache=false&bypassCache=true`;
       const [masterRes, fmsRes, dataRes, userRes] = await Promise.all([
         fetch(`${FETCH_URL}?sheet=Master&action=fetch${cb}`).then(res => res.json()),
         fetch(`${FETCH_URL}?sheet=FMS&action=fetch${cb}`).then(res => res.json()),
@@ -73,11 +73,57 @@ const OnlinePosting = () => {
     }
   };
 
+  const hardRefreshData = async () => {
+    setTableLoading(true);
+    try {
+      // 1. Force clear App Script cache for "FMS" sheet by writing Cell Z2 to empty value
+      try {
+        await fetch(FETCH_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            sheetName: "FMS",
+            action: "updateCell",
+            rowIndex: "2",
+            columnIndex: "26",
+            value: "",
+          }).toString(),
+        });
+      } catch (cacheErr) {
+        console.warn("FMS cache clearing request failed, proceeding anyway", cacheErr);
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const cb = `&_=${Date.now()}&realtime=1&cache=false&bypassCache=true`;
+      const [masterRes, fmsRes, dataRes, userRes] = await Promise.all([
+        fetch(`${FETCH_URL}?sheet=Master&action=fetch${cb}`).then(res => res.json()),
+        fetch(`${FETCH_URL}?sheet=FMS&action=fetch${cb}`).then(res => res.json()),
+        fetch(`${FETCH_URL}?sheet=Data Resposnse&action=fetch${cb}`).then(res => res.json()),
+        fetch(`${FETCH_URL}?sheet=USER&action=fetch${cb}`).then(res => res.json())
+      ]);
+
+      if (masterRes.success) setMasterData(masterRes.data);
+      if (fmsRes.success) setGlobalFmsData(fmsRes.data);
+      if (dataRes.success) setDataResponseData(dataRes.data);
+      if (userRes.success) setGlobalUserData(userRes.data);
+
+      toast.success("Hard refresh complete!");
+    } catch (error) {
+      console.error("OnlinePosting Refresh Error:", error);
+      toast.error("Failed to refresh data");
+    } finally {
+      setTableLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
 
-  const refreshData = fetchData;
+  const refreshData = hardRefreshData;
 
   useEffect(() => {
     setTableLoading(storeLoading);
@@ -232,30 +278,11 @@ const OnlinePosting = () => {
 
   // Internal upload function used during submission
   const uploadFileToServer = async (file) => {
-    console.log("🚀 Starting file upload during submission...");
+    console.log("🚀 Starting file upload to Cloudinary...");
     try {
-      const base64Data = await convertFileToBase64(file);
-      const response = await fetch(import.meta.env.VITE_GOOGLE_SHEET_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          action: "uploadFile",
-          base64Data: base64Data,
-          fileName: file.name,
-          mimeType: file.type,
-          folderId: "11INOky8szb4bHx4-M-62HqkXi-SAM6K-",
-        }),
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        console.log("✅ Upload success, file URL:", result.fileUrl);
-        return result.fileUrl;
-      } else {
-        throw new Error(result.error || "Upload failed");
-      }
+      const secureUrl = await uploadToCloudinary(file);
+      console.log("✅ Upload success, file URL:", secureUrl);
+      return secureUrl;
     } catch (error) {
       console.error("🔥 Upload error:", error);
       throw error;
@@ -566,6 +593,15 @@ const OnlinePosting = () => {
     <div className="space-y-6 page-content p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-800">Online Posting</h1>
+        <button
+          onClick={hardRefreshData}
+          disabled={tableLoading}
+          className="flex items-center gap-2 bg-white text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm font-medium text-sm disabled:opacity-60"
+          title="Hard Refresh Data from Google Sheets"
+        >
+          <RefreshCw size={16} className={tableLoading ? "animate-spin text-navy" : ""} />
+          <span>{tableLoading ? "Refreshing..." : "Hard Refresh"}</span>
+        </button>
       </div>
 
       {/* Post Modal */}
@@ -868,14 +904,23 @@ const OnlinePosting = () => {
                 ))}
               </select>
             </div>
-            <div className="flex items-end">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={hardRefreshData}
+                disabled={tableLoading}
+                className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium border border-gray-300 transition-colors disabled:opacity-60 shadow-sm"
+                title="Hard Refresh"
+              >
+                <RefreshCw size={14} className={tableLoading ? "animate-spin text-navy" : ""} />
+                <span>Refresh</span>
+              </button>
               <button
                 onClick={() => {
                   setSearchTerm("");
                   setDeptFilter("");
                   setDesigFilter("");
                 }}
-                className="text-sm text-navy hover:text-indigo-800 font-medium flex items-center gap-1 mb-2"
+                className="text-sm text-navy hover:text-indigo-800 font-medium flex items-center gap-1"
               >
                 <X size={14} /> Clear Filters
               </button>

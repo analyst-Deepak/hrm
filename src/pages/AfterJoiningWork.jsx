@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Filter, Search, Clock, CheckCircle, X } from "lucide-react";
-
 import toast from "react-hot-toast";
+import { uploadToCloudinary } from "../utils/cloudinaryUpload";
 
 const AfterJoiningWork = () => {
   const [activeTab, setActiveTab] = useState("pending");
@@ -205,44 +205,11 @@ const AfterJoiningWork = () => {
     }
   };
 
-  // Upload image to Google Drive
+  // Upload image to Cloudinary
   const uploadImageToDrive = async (file, fileName) => {
     try {
-      const reader = new FileReader();
-      return new Promise((resolve, reject) => {
-        reader.onload = async () => {
-          try {
-            const base64Data = reader.result;
-            const response = await fetch(
-              import.meta.env.VITE_GOOGLE_SHEET_URL,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: new URLSearchParams({
-                  action: "uploadFile",
-                  base64Data: base64Data,
-                  fileName: fileName,
-                  mimeType: file.type,
-                  folderId: DRIVE_FOLDER_ID,
-                }).toString(),
-              }
-            );
-
-            const result = await response.json();
-            if (result.success) {
-              resolve(result.fileUrl);
-            } else {
-              reject(new Error(result.error || "Upload failed"));
-            }
-          } catch (error) {
-            reject(error);
-          }
-        };
-        reader.onerror = () => reject(new Error("Failed to read file"));
-        reader.readAsDataURL(file);
-      });
+      const url = await uploadToCloudinary(file);
+      return url;
     } catch (error) {
       throw new Error(`Upload failed: ${error.message}`);
     }
@@ -440,7 +407,7 @@ const AfterJoiningWork = () => {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      const timestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 
       const phoneNumbers = [
         assetsData.phone1,
@@ -614,7 +581,7 @@ const AfterJoiningWork = () => {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const formattedDateForSheets = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      const formattedDateForSheets = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 
       const allFieldsYes =
         formData.checkSalarySlipResume &&

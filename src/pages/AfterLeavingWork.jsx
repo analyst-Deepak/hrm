@@ -255,7 +255,7 @@ const AfterLeavingWork = () => {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const formattedTimestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      const formattedTimestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 
       // Check if all conditions are met
       const allConditionsMet =

@@ -405,7 +405,7 @@ const Layout = () => {
   }
 
   return (
-    <div className={`hrms-app flex h-screen ${isDarkMode ? 'erp-dark bg-[#06101f]' : 'bg-[#e8eef6]'}`}>
+    <div className={`hrms-app flex h-screen ${isDarkMode ? 'erp-dark bg-[#140b07]' : 'bg-[#f7f2ed]'}`}>
       {/* Scroll to top component */}
       <ScrollToTop />
 
@@ -414,16 +414,16 @@ const Layout = () => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="erp-topbar z-40 hidden h-[64px] flex-shrink-0 items-center justify-between border-b border-slate-200 bg-white/95 px-5 shadow-[0_8px_30px_rgba(15,23,42,0.05)] backdrop-blur lg:flex">
+        <header className="erp-topbar z-40 hidden h-[64px] flex-shrink-0 items-center justify-between border-b border-amber-900/10 bg-white/95 px-5 shadow-[0_8px_30px_rgba(43,24,16,0.04)] backdrop-blur lg:flex">
           <div className="flex items-center gap-4">
             <label className="relative block w-[360px]">
-              <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-amber-800/40" />
               <input
                 type="search"
                 placeholder="Search anything..."
-                className="erp-topbar-search h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-20 text-sm font-semibold text-slate-700 outline-none transition focus:border-teal-600 focus:bg-white focus:ring-4 focus:ring-teal-100"
+                className="erp-topbar-search h-10 w-full rounded-xl border border-amber-900/15 bg-[#fcfaf7] pl-10 pr-20 text-sm font-semibold text-stone-800 outline-none transition focus:border-amber-700 focus:bg-white focus:ring-4 focus:ring-amber-200/50"
               />
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-wider text-amber-900/40">
                 Ctrl + K
               </span>
             </label>

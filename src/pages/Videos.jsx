@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, X, Trash2, Plus, Video, Loader, Play } from 'lucide-react';
+import { uploadToCloudinary } from '../utils/cloudinaryUpload';
 
 const Videos = () => {
   const [showModal, setShowModal] = useState(false);
@@ -126,38 +127,13 @@ const Videos = () => {
   };
 
   const uploadVideoToGoogleDrive = async (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const base64Data = e.target.result;
-
-          const formData = new FormData();
-          formData.append('action', 'uploadFile');
-          formData.append('base64Data', base64Data);
-          formData.append('fileName', file.name);
-          formData.append('mimeType', file.type);
-          formData.append('folderId', FOLDER_ID);
-
-          const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: formData
-          });
-
-          const result = await response.json();
-
-          if (result.success) {
-            resolve(result.fileUrl);
-          } else {
-            reject(new Error(result.error || 'Failed to upload video'));
-          }
-        } catch (error) {
-          reject(error);
-        }
-      };
-      reader.onerror = () => reject(new Error('Failed to read video file'));
-      reader.readAsDataURL(file);
-    });
+    try {
+      const url = await uploadToCloudinary(file);
+      return url;
+    } catch (error) {
+      console.error('Video upload error:', error);
+      throw new Error(error.message || 'Failed to upload video');
+    }
   };
 
   const handleSubmit = async () => {
@@ -181,7 +157,7 @@ const Videos = () => {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      const timestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 
       const videoId = generateVideoId();
 

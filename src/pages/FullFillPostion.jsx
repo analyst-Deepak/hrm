@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Search, Clock, HistoryIcon, Plus, X, CheckCircle } from "lucide-react";
-
 import toast from "react-hot-toast";
+import { uploadToCloudinary } from "../utils/cloudinaryUpload";
 
 const FullFillPostion = () => {
 
@@ -53,7 +53,7 @@ const FullFillPostion = () => {
     const minutes = String(now.getMinutes()).padStart(2, "0");
     const seconds = String(now.getSeconds()).padStart(2, "0");
 
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
   };
 
   const fetchIndentDataFromRow7 = async () => {
@@ -172,53 +172,19 @@ const FullFillPostion = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    setFileUploading(true); // Start upload
+    setFileUploading(true);
 
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64Data = reader.result;
-
-        const response = await fetch(
-          import.meta.env.VITE_GOOGLE_SHEET_URL,
-          {
-            method: "POST",
-            body: new URLSearchParams({
-              action: "uploadFile",
-              base64Data: base64Data,
-              fileName: file.name,
-              mimeType: file.type,
-              folderId: "1tSoT0na5lGKAE82z0kDiDNU6ikkHJjA1OayGwV5CFq9tfc3BVrbLl3g-nkyKwHoYIMzTI2aI",
-            }),
-          }
-        );
-
-        const result = await response.json();
-        console.log("Upload result:", result); // Debug
-
-        if (result.success) {
-          setFormData((prev) => ({
-            ...prev,
-            uploadedFileUrl: result.fileUrl,
-          }));
-          toast.success("File uploaded successfully!");
-        } else {
-          toast.error(
-            "File upload failed: " + (result.error || "Unknown error")
-          );
-        }
-        setFileUploading(false); // Upload complete
-      };
-
-      reader.onerror = () => {
-        toast.error("Error reading file");
-        setFileUploading(false);
-      };
-
-      reader.readAsDataURL(file);
+      const secureUrl = await uploadToCloudinary(file);
+      setFormData((prev) => ({
+        ...prev,
+        uploadedFileUrl: secureUrl,
+      }));
+      toast.success("File uploaded successfully!");
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error("File upload error");
+      toast.error("File upload error: " + (error.message || "Failed to upload"));
+    } finally {
       setFileUploading(false);
     }
   };

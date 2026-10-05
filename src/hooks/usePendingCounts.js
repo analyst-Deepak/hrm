@@ -50,7 +50,7 @@ export const usePendingCounts = () => {
     });
 
     const FETCH_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
-    const JOINING_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbwhFgVoAB4S1cKrU0iDRtCH5B2K-ol2c0RmaaEWXGqv0bdMzs3cs3kPuqOfUAR3KHYZ7g/exec";
+    const JOINING_SUBMIT_URL = import.meta.env.VITE_JOINING_SHEET_URL || "https://script.google.com/macros/s/AKfycbyZJjH0aHn6roRhEJ1hVPmmlJtAVRU74Fc07os6GYjKkb1xdo9wB5peDYRyTPefJn1bnQ/exec";
     const FAST_STAGE_TTL_MS = 10 * 60 * 1000;
     const JOINING_LETTER_DONE_KEY = "hrms_stage_done_joining_letter_v1";
     const INDUCTION_FAST_PENDING_KEY = "hrms_stage_pending_induction_v1";
@@ -126,8 +126,23 @@ export const usePendingCounts = () => {
                 };
 
                 const cRows = parseData(candidateRes).rows;
-                const jRows = parseData(joiningRes).rows;
-                const hasSheetValue = (value) => value !== null && value !== undefined && value.toString().trim() !== "";
+                const hasSheetValue = (value) => {
+                    if (value === null || value === undefined) return false;
+                    const str = value.toString().trim();
+                    return (
+                        str !== "" &&
+                        str !== "0" &&
+                        str !== "0.0" &&
+                        str !== "00:00:00" &&
+                        str !== "1899-12-30" &&
+                        str !== "false" &&
+                        str !== "FALSE" &&
+                        str !== "#N/A" &&
+                        str !== "#VALUE!" &&
+                        str !== "#REF!" &&
+                        str !== "NaN"
+                    );
+                };
                 const joiningLetterDoneIds = new Set(readFastStageRows(JOINING_LETTER_DONE_KEY).map((item) => item.indentNumber));
                 const inductionDoneIds = new Set(readFastStageRows(INDUCTION_DONE_KEY).map((item) => item.indentNumber));
                 const assetDoneIds = new Set(readFastStageRows(ASSET_DONE_KEY).map((item) => item.indentNumber));

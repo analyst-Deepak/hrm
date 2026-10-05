@@ -107,7 +107,7 @@ const Dashboard = () => {
 
   // API URLs
   const FETCH_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
-  const JOINING_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbwhFgVoAB4S1cKrU0iDRtCH5B2K-ol2c0RmaaEWXGqv0bdMzs3cs3kPuqOfUAR3KHYZ7g/exec";
+  const JOINING_SUBMIT_URL = import.meta.env.VITE_JOINING_SHEET_URL || "https://script.google.com/macros/s/AKfycbyZJjH0aHn6roRhEJ1hVPmmlJtAVRU74Fc07os6GYjKkb1xdo9wB5peDYRyTPefJn1bnQ/exec";
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -686,7 +686,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="erp-dashboard relative min-h-screen overflow-hidden rounded-[1.1rem] border border-slate-200/80 bg-[#f4f7fb] p-3 font-sans shadow-sm sm:p-4 md:p-5">
+    <div className="erp-dashboard relative min-h-screen overflow-hidden rounded-[1.1rem] border border-slate-200/80 bg-[#f8f3ee] p-3 font-sans shadow-sm sm:p-4 md:p-5">
       <style>{`
         @keyframes erp-fade-up {
           from { opacity: 0; transform: translateY(16px); }
@@ -706,8 +706,8 @@ const Dashboard = () => {
         .erp-meter { animation: erp-meter 2.8s ease-in-out infinite; transform-origin: left; }
         .erp-grid-surface {
           background-image:
-            linear-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(15, 23, 42, 0.045) 1px, transparent 1px);
+            linear-gradient(rgba(43, 23, 14, 0.045) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(43, 23, 14, 0.045) 1px, transparent 1px);
           background-size: 38px 38px;
         }
         @media (prefers-reduced-motion: reduce) {
@@ -715,22 +715,22 @@ const Dashboard = () => {
         }
       `}</style>
       <div className="pointer-events-none absolute inset-0 erp-grid-surface" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-52 bg-gradient-to-b from-white/80 via-cyan-50/40 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-52 bg-gradient-to-b from-white/80 via-amber-50/30 to-transparent" />
 
       <div className="relative z-10 space-y-5">
-        <section className="erp-dashboard-hero erp-fade-up relative overflow-hidden rounded-2xl border border-teal-900/20 bg-[#003f3b] text-white shadow-xl shadow-teal-950/10">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_10%,rgba(20,184,166,0.34),transparent_32%),linear-gradient(135deg,rgba(0,75,70,0.96),rgba(0,45,48,0.98))]" />
+        <section className="erp-dashboard-hero erp-fade-up relative overflow-hidden rounded-2xl border border-amber-900/20 bg-[#2b170e] text-white shadow-xl shadow-amber-950/15">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_10%,rgba(217,119,6,0.30),transparent_32%),linear-gradient(135deg,rgba(58,29,18,0.96),rgba(32,15,8,0.98))]" />
           <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(140deg,transparent_0%,transparent_45%,rgba(255,255,255,0.18)_46%,transparent_48%),linear-gradient(30deg,transparent_0%,transparent_62%,rgba(255,255,255,0.14)_63%,transparent_65%)]" />
           <div className="absolute left-0 top-0 h-full w-1/2 bg-[linear-gradient(90deg,rgba(255,255,255,0.12),transparent)] erp-scan-line" />
 
           <div className="relative grid gap-5 p-5 sm:p-6 lg:grid-cols-[1.35fr_0.65fr] lg:p-7">
             <div>
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/20 px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.22em] text-teal-50">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/20 px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.22em] text-amber-100">
                 <TrendingUp size={14} />
                 HRMS ERP Command Center
               </div>
               <h1 className="text-3xl font-black tracking-tight sm:text-4xl">HR Dashboard</h1>
-              <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-300">
+              <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-amber-100/80">
                 Recruitment, joining, employee signals, and pending workflow overview in one compact ERP console.
               </p>
 
@@ -741,7 +741,7 @@ const Dashboard = () => {
                     <div
                       key={signal.label}
                       onClick={signal.onClick}
-                      className={`erp-fade-up rounded-xl border border-white/80 bg-white p-4 text-slate-950 shadow-lg shadow-teal-950/10 ${signal.clickable ? 'cursor-pointer hover:bg-slate-50 transition' : ''}`}
+                      className={`erp-fade-up rounded-xl border border-white/80 bg-white p-4 text-slate-950 shadow-lg shadow-amber-950/10 ${signal.clickable ? 'cursor-pointer hover:bg-amber-50/50 transition' : ''}`}
                       style={{ animationDelay: `${120 + index * 70}ms` }}
                     >
                       <div className="mb-2 flex items-center justify-between">
@@ -758,7 +758,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/80 bg-white p-4 text-slate-950 shadow-xl shadow-teal-950/10">
+            <div className="rounded-2xl border border-white/80 bg-white p-4 text-slate-950 shadow-xl shadow-amber-950/10">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[0.7rem] font-black uppercase tracking-[0.2em] text-slate-500">Live Time</p>
@@ -769,7 +769,7 @@ const Dashboard = () => {
                     {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                   </p>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 text-teal-700 shadow-lg">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-800 shadow-lg">
                   <Clock size={22} />
                 </div>
               </div>
@@ -781,7 +781,7 @@ const Dashboard = () => {
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-slate-200">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-teal-600 via-emerald-500 to-lime-400 erp-meter"
+                    className="h-full rounded-full bg-gradient-to-r from-amber-700 via-amber-500 to-amber-300 erp-meter"
                     style={{ width: `${Math.min(closeRate, 100)}%` }}
                   />
                 </div>
@@ -789,7 +789,7 @@ const Dashboard = () => {
 
               <Link
                 to="/joining_calendar"
-                className="mt-5 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#00564f] text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#00453f]"
+                className="mt-5 flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#451a03] to-[#78350f] text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:from-[#321202] hover:to-[#5c280b]"
               >
                 <Calendar size={17} />
                 Joining Calendar

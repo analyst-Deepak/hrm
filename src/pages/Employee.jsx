@@ -3,6 +3,7 @@ import { Filter, Search, Clock, CheckCircle, ImageIcon, X, User, Briefcase, MapP
 
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
+import { uploadToCloudinary } from "../utils/cloudinaryUpload";
 
 const Employee = () => {
   const [activeTab, setActiveTab] = useState("joining");
@@ -418,37 +419,13 @@ const Employee = () => {
 
   const uploadFile = async (file, folderId) => {
     if (!file) return "";
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const base64Data = e.target.result;
-          const targetUrl = import.meta.env.VITE_GOOGLE_SHEET_URL || import.meta.env.VITE_JOINING_SHEET_URL;
-          const response = await fetch(targetUrl, {
-            method: "POST",
-            body: new URLSearchParams({
-              action: "uploadFile",
-              base64Data: base64Data,
-              fileName: file.name,
-              mimeType: file.type,
-              folderId: '1DL_Xf0_9fszToIDlZ3MMsiebDSK4OeIu2FOa1kvA8vPZCGoVKN6Johxc95FLVqP9Qp7cBp9v',
-            }),
-          });
-          const result = await response.json();
-          if (result.success) {
-            resolve(result.fileUrl);
-          } else {
-            console.error("Upload failed:", result.error);
-            resolve("");
-          }
-        } catch (error) {
-          console.error("Upload error:", error);
-          resolve("");
-        }
-      };
-      reader.onerror = () => resolve("");
-      reader.readAsDataURL(file);
-    });
+    try {
+      const url = await uploadToCloudinary(file);
+      return url;
+    } catch (error) {
+      console.error("Employee upload error:", error);
+      return "";
+    }
   };
 
   const handleEditClick = (item) => {
@@ -1110,91 +1087,93 @@ const Employee = () => {
       {
         showModal && selectedItem && (
           <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center p-6 border-b border-gray-300">
                 <h3 className="text-lg font-medium text-gray-700">Leaving Form</h3>
-                <button onClick={() => setShowModal(false)} className="text-gray-700">
+                <button onClick={() => setShowModal(false)} className="text-gray-700 hover:text-gray-900">
                   <X size={20} />
                 </button>
               </div>
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Joining ID</label>
-                  <input
-                    type="text"
-                    value={selectedItem.employeeId}
-                    disabled
-                    className="w-full border border-gray-500 rounded-md px-3 py-2 bg-white text-gray-700"
-                  />
+              <form onSubmit={handleSubmit} className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Joining ID</label>
+                    <input
+                      type="text"
+                      value={selectedItem.employeeId}
+                      disabled
+                      className="w-full border border-gray-500 rounded-md px-3 py-2 bg-white text-gray-700"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Working Day *</label>
+                    <input
+                      type="date"
+                      name="dateOfLeaving"
+                      value={formData.dateOfLeaving}
+                      onChange={handleChange}
+                      className="w-full border border-gray-500 rounded-md px-3 py-2 bg-white text-gray-700"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Candidate Name</label>
+                    <input
+                      type="text"
+                      value={selectedItem.candidateName}
+                      disabled
+                      className="w-full border border-gray-500 rounded-md px-3 py-2 bg-gray-100 text-gray-700 cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
+                    <input
+                      type="text"
+                      value={selectedItem.designation}
+                      disabled
+                      className="w-full border border-gray-500 rounded-md px-3 py-2 bg-gray-100 text-gray-700 cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Salary</label>
+                    <input
+                      type="text"
+                      name="salary"
+                      value={formData.salary}
+                      onChange={handleChange}
+                      className="w-full border border-gray-500 rounded-md px-3 py-2 bg-white text-gray-700"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mobile No.</label>
+                    <input
+                      type="text"
+                      name="mobileNumber"
+                      value={formData.mobileNumber}
+                      onChange={handleChange}
+                      className="w-full border border-gray-500 rounded-md px-3 py-2 bg-white text-gray-700"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Reason For Resignation *</label>
+                    <textarea
+                      name="reasonOfLeaving"
+                      value={formData.reasonOfLeaving}
+                      onChange={handleChange}
+                      rows={3}
+                      className="w-full border border-gray-500 rounded-md px-3 py-2 bg-white text-gray-700"
+                      required
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Working Day *</label>
-                  <input
-                    type="date"
-                    name="dateOfLeaving"
-                    value={formData.dateOfLeaving}
-                    onChange={handleChange}
-                    className="w-full border border-gray-500 rounded-md px-3 py-2 bg-white text-gray-700"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Reason For Resignation *</label>
-                  <textarea
-                    name="reasonOfLeaving"
-                    value={formData.reasonOfLeaving}
-                    onChange={handleChange}
-                    rows={3}
-                    className="w-full border border-gray-500 rounded-md px-3 py-2 bg-white text-gray-700"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Salary</label>
-                  <input
-                    type="text"
-                    name="salary"
-                    value={formData.salary}
-                    onChange={handleChange}
-                    className="w-full border border-gray-500 rounded-md px-3 py-2 bg-white text-gray-700"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Candidate Name</label>
-                  <input
-                    type="text"
-                    value={selectedItem.candidateName}
-                    disabled
-                    className="w-full border border-gray-500 rounded-md px-3 py-2 bg-gray-100 text-gray-700 cursor-not-allowed"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
-                  <input
-                    type="text"
-                    value={selectedItem.designation}
-                    disabled
-                    className="w-full border border-gray-500 rounded-md px-3 py-2 bg-gray-100 text-gray-700 cursor-not-allowed"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mobile No.</label>
-                  <input
-                    type="text"
-                    name="mobileNumber"
-                    value={formData.mobileNumber}
-                    onChange={handleChange}
-                    className="w-full border border-gray-500 rounded-md px-3 py-2 bg-white text-gray-700"
-                  />
-                </div>
-
-                <div className="flex justify-end space-x-2 pt-4">
+                <div className="flex justify-end space-x-2 pt-6">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}

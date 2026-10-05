@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
+import { uploadToCloudinary } from "../utils/cloudinaryUpload";
 
 
 const JoiningLetterRelease = () => {
-    const JOINING_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbwhFgVoAB4S1cKrU0iDRtCH5B2K-ol2c0RmaaEWXGqv0bdMzs3cs3kPuqOfUAR3KHYZ7g/exec";
+    const JOINING_SUBMIT_URL = import.meta.env.VITE_JOINING_SHEET_URL || "https://script.google.com/macros/s/AKfycbyZJjH0aHn6roRhEJ1hVPmmlJtAVRU74Fc07os6GYjKkb1xdo9wB5peDYRyTPefJn1bnQ/exec";
     const JOINING_LETTER_PLANNED_COL_AQ = 42;
     const JOINING_LETTER_ACTUAL_COL_AR = 43;
     const FAST_STAGE_TTL_MS = 10 * 60 * 1000;
@@ -34,7 +35,7 @@ const JoiningLetterRelease = () => {
         setStoreLoading(true);
         setTableLoading(true);
         try {
-            const cb = `&_=${Date.now()}`;
+            const cb = `&_=${Date.now()}&realtime=1&cache=false&bypassCache=true`;
             const res = await fetch(`${JOINING_SUBMIT_URL}?action=read&sheet=JOINING_FMS${cb}`);
             const json = await res.json();
 
@@ -50,11 +51,34 @@ const JoiningLetterRelease = () => {
         }
     };
 
+    const hardRefresh = async () => {
+        setStoreLoading(true);
+        setTableLoading(true);
+        try {
+            const cb = `&_=${Date.now()}&realtime=1&cache=false&bypassCache=true`;
+            const res = await fetch(`${JOINING_SUBMIT_URL}?action=read&sheet=JOINING_FMS${cb}`);
+            const json = await res.json();
+
+            if (json.success) {
+                setJoiningFmsData(json.data);
+                toast.success("Hard refresh complete!");
+            } else {
+                toast.error("Failed to load data");
+            }
+        } catch (error) {
+            console.error("Joining Letter Data Fetch Error:", error);
+            toast.error("Failed to load data");
+        } finally {
+            setStoreLoading(false);
+            setTableLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchData();
     }, []);
 
-    const refreshData = fetchData;
+    const refreshData = hardRefresh;
 
     const readFastStageRows = (key) => {
         try {
@@ -89,18 +113,55 @@ const JoiningLetterRelease = () => {
         }
 
         const rawData = joiningFmsData;
-        const headers = rawData[6] || [];
-        const dataRows = rawData.length > 7 ? rawData.slice(7) : [];
+        let headerRowIndex = rawData.findIndex(row =>
+            row && row.some(cell =>
+                cell && (
+                    cell.toString().trim().toUpperCase() === "EMPLOYEE CODE" ||
+                    cell.toString().trim().toUpperCase() === "ID" ||
+                    cell.toString().trim().toLowerCase().includes("candiate name") ||
+                    cell.toString().trim().toLowerCase().includes("candidate name")
+                )
+            )
+        );
+        if (headerRowIndex === -1) headerRowIndex = 5;
+        const headers = rawData[headerRowIndex] || [];
+        const dataRows = rawData.slice(headerRowIndex + 1);
 
-        const getIndex = (headerName) => headers.findIndex(h => h && h.toString().trim().toLowerCase() === headerName.trim().toLowerCase());
+        const getIndex = (headerName) => {
+            const norm = headerName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const idx = headers.findIndex(h => {
+                if (!h) return false;
+                const hNorm = h.toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+                return hNorm === norm || hNorm.includes(norm) || norm.includes(hNorm);
+            });
+            return idx;
+        };
 
-        const idxIndent = getIndex("Indent Number") !== -1 ? getIndex("Indent Number") : 5;
-        const idxName = getIndex("Candidate Name") !== -1 ? getIndex("Candidate Name") : 10;
+        const idxIndent = getIndex("ID") !== -1 ? getIndex("ID") : (getIndex("Indent Number") !== -1 ? getIndex("Indent Number") : 5);
+        const idxName = getIndex("CANDIATE NAME") !== -1 ? getIndex("CANDIATE NAME") : (getIndex("Candidate Name") !== -1 ? getIndex("Candidate Name") : 6);
         const idxDept = getIndex("Department") !== -1 ? getIndex("Department") : 2;
         const idxDesig = getIndex("Designation") !== -1 ? getIndex("Designation") : 14;
-        const idxMobile = getIndex("Contact No") !== -1 ? getIndex("Contact No") : 23;
-        const idxEmail = getIndex("Email Id") !== -1 ? getIndex("Email Id") : 31;
-        const hasSheetValue = (value) => value !== null && value !== undefined && value.toString().trim() !== "";
+        const idxMobile = getIndex("Mobile No") !== -1 ? getIndex("Mobile No") : (getIndex("Contact No") !== -1 ? getIndex("Contact No") : 23);
+        const idxEmail = getIndex("Personal Email") !== -1 ? getIndex("Personal Email") : (getIndex("Email Id") !== -1 ? getIndex("Email Id") : 31);
+        
+        const hasSheetValue = (value) => {
+            if (value === null || value === undefined) return false;
+            const str = value.toString().trim();
+            return (
+                str !== "" &&
+                str !== "0" &&
+                str !== "0.0" &&
+                str !== "00:00:00" &&
+                str !== "1899-12-30" &&
+                str !== "false" &&
+                str !== "FALSE" &&
+                str !== "#N/A" &&
+                str !== "#VALUE!" &&
+                str !== "#REF!" &&
+                str !== "NaN"
+            );
+        };
+
         const completedByIndent = new Map(readFastStageRows(JOINING_LETTER_DONE_KEY).map((item) => [item.indentNumber, item]));
 
         const processedData = dataRows.map((row) => {
@@ -110,7 +171,7 @@ const JoiningLetterRelease = () => {
             const columnAQ = row[JOINING_LETTER_PLANNED_COL_AQ];
             const columnAR = row[JOINING_LETTER_ACTUAL_COL_AR];
             const completedRow = completedByIndent.get(indentNumber);
-            const effectiveColumnAR = hasSheetValue(columnAR) ? columnAR : completedRow?.columnAR;
+            const effectiveColumnAR = hasSheetValue(columnAR) ? columnAR : (hasSheetValue(completedRow?.columnAR) ? completedRow?.columnAR : "");
 
             return {
                 indentNumber,
@@ -194,41 +255,16 @@ const JoiningLetterRelease = () => {
 
         try {
             setUploading(true);
-            const reader = new FileReader();
-            reader.onloadend = async () => {
-                const base64Data = reader.result;
-
-                const response = await fetch(
-                    import.meta.env.VITE_GOOGLE_SHEET_URL,
-                    {
-                        method: "POST",
-                        body: new URLSearchParams({
-                            action: "uploadFile",
-                            base64Data: base64Data,
-                            fileName: file.name,
-                            mimeType: file.type,
-                            folderId: "1DL_Xf0_9fszToIDlZ3MMsiebDSK4OeIu2FOa1kvA8vPZCGoVKN6Johxc95FLVqP9Qp7cBp9v",
-                        }),
-                    }
-                );
-
-                const result = await response.json();
-
-                if (result.success) {
-                    setFormData((prev) => ({
-                        ...prev,
-                        attachmentUrl: result.fileUrl,
-                    }));
-                    toast.success("File uploaded successfully!");
-                } else {
-                    toast.error("File upload failed");
-                }
-                setUploading(false);
-            };
-            reader.readAsDataURL(file);
+            const secureUrl = await uploadToCloudinary(file);
+            setFormData((prev) => ({
+                ...prev,
+                attachmentUrl: secureUrl,
+            }));
+            toast.success("File uploaded successfully!");
         } catch (error) {
             console.error("Upload error:", error);
-            toast.error("File upload error");
+            toast.error("File upload error: " + (error.message || "Failed to upload"));
+        } finally {
             setUploading(false);
         }
     };
@@ -247,7 +283,7 @@ const JoiningLetterRelease = () => {
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
-            const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            const timestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 
             // Prepare data for submission
             const dataArray = [
@@ -298,10 +334,18 @@ const JoiningLetterRelease = () => {
 
     return (
         <div className="space-y-6 page-content p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-bold text-gray-800 uppercase">
                     Joining Letter Release
                 </h1>
+                <button
+                    onClick={hardRefresh}
+                    disabled={tableLoading}
+                    className="p-1.5 rounded-lg bg-white border border-gray-300 shadow-sm text-gray-600 hover:text-navy hover:bg-gray-50 transition-all duration-200 disabled:opacity-60 cursor-pointer"
+                    title="Hard Refresh"
+                >
+                    <RefreshCw size={20} className={tableLoading ? "animate-spin text-navy" : ""} />
+                </button>
             </div>
 
             {/* Search and Tabs */}

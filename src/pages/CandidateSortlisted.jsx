@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Search, Clock, History as HistoryIcon, CheckCircle, Plus, X, Image, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
+import { uploadToCloudinary } from "../utils/cloudinaryUpload";
 
 const normalizeValue = (value) => (value || "").toString().trim().toLowerCase();
 
@@ -287,36 +288,16 @@ const CandidateSortlisted = () => {
 
         setFileUploading(true);
         try {
-            const reader = new FileReader();
-            reader.onloadend = async () => {
-                const base64Data = reader.result;
-                const response = await fetch(import.meta.env.VITE_GOOGLE_SHEET_URL, {
-                    method: "POST",
-                    body: new URLSearchParams({
-                        action: "uploadFile",
-                        base64Data: base64Data,
-                        fileName: file.name,
-                        mimeType: file.type,
-                        folderId: "1tSoT0na5lGKAE82z0kDiDNU6ikkHJjA1OayGwV5CFq9tfc3BVrbLl3g-nkyKwHoYIMzTI2aI",
-                    }),
-                });
-
-                const result = await response.json();
-                if (result.success) {
-                    setFormData((prev) => ({
-                        ...prev,
-                        resumeUrl: result.fileUrl,
-                    }));
-                    toast.success("Resume uploaded successfully!");
-                } else {
-                    toast.error("Upload failed: " + (result.error || "Unknown error"));
-                }
-                setFileUploading(false);
-            };
-            reader.readAsDataURL(file);
+            const url = await uploadToCloudinary(file);
+            setFormData((prev) => ({
+                ...prev,
+                resumeUrl: url,
+            }));
+            toast.success("Resume uploaded successfully!");
         } catch (error) {
             console.error("Upload error:", error);
-            toast.error("File upload error");
+            toast.error("File upload error: " + (error.message || "Upload failed"));
+        } finally {
             setFileUploading(false);
         }
     };
@@ -334,7 +315,7 @@ const CandidateSortlisted = () => {
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
-            const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            const timestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 
             const rowData = [];
             rowData[1] = newID;
@@ -522,7 +503,7 @@ const CandidateSortlisted = () => {
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
-            const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            const timestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 
             // 1. Submit to DATA RESPONSE
             const responseData = [];

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Search, Clock, CheckCircle, X, Upload } from "lucide-react";
-
 import toast from "react-hot-toast";
+import { uploadToCloudinary } from "../utils/cloudinaryUpload";
 
 const FindEnquiry = () => {
   const [activeTab, setActiveTab] = useState("pending");
@@ -318,47 +318,14 @@ const FindEnquiry = () => {
     return `ENQ-${String(nextNumber).padStart(2, "0")}`;
   };
 
-  // Convert file to base64
-  const fileToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
-  };
-
-  // Upload file to Google Drive
+  // Upload file to Cloudinary
   const uploadFileToGoogleDrive = async (file, type) => {
     try {
-      const base64Data = await fileToBase64(file);
-
-      const response = await fetch(
-        import.meta.env.VITE_GOOGLE_SHEET_URL,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            action: "uploadFile",
-            base64Data: base64Data,
-            fileName: `${generatedCandidateNo}_${type}_${file.name}`,
-            mimeType: file.type,
-            folderId: GOOGLE_DRIVE_FOLDER_ID,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (result.success) {
-        return result.fileUrl;
-      } else {
-        throw new Error(result.error || "File upload failed");
-      }
+      const fileName = `${generatedCandidateNo}_${type}_${file.name}`;
+      const url = await uploadToCloudinary(file, fileName);
+      return url;
     } catch (error) {
-      console.error("Error uploading file:", error);
+      console.error("Error uploading file to Cloudinary:", error);
       throw error;
     }
   };
@@ -690,7 +657,7 @@ const FindEnquiry = () => {
         const hours = String(now.getHours()).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const seconds = String(now.getSeconds()).padStart(2, '0');
-        const formattedTimestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        const formattedTimestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 
         const rowData = [
           formattedTimestamp,                           // Column A: Timestamp

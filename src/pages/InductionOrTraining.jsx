@@ -4,7 +4,7 @@ import { Search, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 const InductionOrTraining = () => {
-    const JOINING_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbwhFgVoAB4S1cKrU0iDRtCH5B2K-ol2c0RmaaEWXGqv0bdMzs3cs3kPuqOfUAR3KHYZ7g/exec";
+    const JOINING_SUBMIT_URL = import.meta.env.VITE_JOINING_SHEET_URL || "https://script.google.com/macros/s/AKfycbyZJjH0aHn6roRhEJ1hVPmmlJtAVRU74Fc07os6GYjKkb1xdo9wB5peDYRyTPefJn1bnQ/exec";
 
     // Global Store
 
@@ -183,7 +183,7 @@ const InductionOrTraining = () => {
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
-            const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            const timestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 
             const dataArray = [
                 selectedCandidate.indentNumber,

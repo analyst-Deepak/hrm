@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Search, Clock, HistoryIcon, Plus, X, CheckCircle } from "lucide-react";
-
+import { Search, Clock, HistoryIcon, Plus, X, CheckCircle, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
+import { uploadToCloudinary } from "../utils/cloudinaryUpload";
 
 const Whatsapp = () => {
 
@@ -51,7 +51,7 @@ const Whatsapp = () => {
         setStoreLoading(true);
         setTableLoading(true);
         try {
-            const cb = `&_=${Date.now()}`;
+            const cb = `&_=${Date.now()}&realtime=1&cache=false&bypassCache=true`;
             const [fmsRes, dataRes] = await Promise.all([
                 fetch(`${FETCH_URL}?sheet=FMS&action=fetch${cb}`).then(res => res.json()),
                 fetch(`${FETCH_URL}?sheet=Data Resposnse&action=fetch${cb}`).then(res => res.json())
@@ -69,11 +69,52 @@ const Whatsapp = () => {
         }
     };
 
+    const hardRefreshData = async () => {
+        setTableLoading(true);
+        try {
+            try {
+                await fetch(FETCH_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                    body: new URLSearchParams({
+                        sheetName: "FMS",
+                        action: "updateCell",
+                        rowIndex: "2",
+                        columnIndex: "26",
+                        value: "",
+                    }).toString(),
+                });
+            } catch (cacheErr) {
+                console.warn("FMS cache clearing request failed", cacheErr);
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+
+            const cb = `&_=${Date.now()}&realtime=1&cache=false&bypassCache=true`;
+            const [fmsRes, dataRes] = await Promise.all([
+                fetch(`${FETCH_URL}?sheet=FMS&action=fetch${cb}`).then(res => res.json()),
+                fetch(`${FETCH_URL}?sheet=Data Resposnse&action=fetch${cb}`).then(res => res.json())
+            ]);
+
+            if (fmsRes.success) setFmsData(fmsRes.data);
+            if (dataRes.success) setDataResponseData(dataRes.data);
+
+            toast.success("Hard refresh complete!");
+        } catch (error) {
+            console.error("Whatsapp Refresh Error:", error);
+            toast.error("Failed to refresh data");
+        } finally {
+            setTableLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchData();
     }, []);
 
-    const refreshData = fetchData;
+    const refreshData = hardRefreshData;
 
     useEffect(() => {
         if (!fmsData || fmsData.length < 7) {
@@ -178,7 +219,7 @@ const Whatsapp = () => {
         const hours = String(now.getHours()).padStart(2, "0");
         const minutes = String(now.getMinutes()).padStart(2, "0");
         const seconds = String(now.getSeconds()).padStart(2, "0");
-        const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        const timestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
         return timestamp;
     };
 
@@ -222,30 +263,11 @@ const Whatsapp = () => {
 
     // Internal upload function used during submission
     const uploadFileToServer = async (file) => {
-        console.log("🚀 Starting file upload during submission...");
+        console.log("🚀 Starting file upload to Cloudinary...");
         try {
-            const base64Data = await convertFileToBase64(file);
-            const response = await fetch(import.meta.env.VITE_GOOGLE_SHEET_URL, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: new URLSearchParams({
-                    action: "uploadFile",
-                    base64Data: base64Data,
-                    fileName: file.name,
-                    mimeType: file.type,
-                    folderId: "1tSoT0na5lGKAE82z0kDiDNU6ikkHJjA1OayGwV5CFq9tfc3BVrbLl3g-nkyKwHoYIMzTI2aI",
-                }),
-            });
-
-            const result = await response.json();
-            if (result.success) {
-                console.log("✅ Upload success, file URL:", result.fileUrl);
-                return result.fileUrl;
-            } else {
-                throw new Error(result.error || "Upload failed");
-            }
+            const secureUrl = await uploadToCloudinary(file);
+            console.log("✅ Upload success, file URL:", secureUrl);
+            return secureUrl;
         } catch (error) {
             console.error("🔥 Upload error:", error);
             throw error;
@@ -413,6 +435,15 @@ const Whatsapp = () => {
                                 <option key={post} value={post}>{post}</option>
                             ))}
                         </select>
+                        <button
+                            onClick={hardRefreshData}
+                            disabled={tableLoading}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium border border-gray-300 transition-colors disabled:opacity-60 shadow-sm"
+                            title="Hard Refresh Data from Google Sheets"
+                        >
+                            <RefreshCw size={14} className={tableLoading ? "animate-spin text-navy" : ""} />
+                            <span>Refresh</span>
+                        </button>
                         <button
                             onClick={() => {
                                 setSearchTerm("");

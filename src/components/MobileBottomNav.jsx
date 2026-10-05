@@ -45,7 +45,7 @@ const MobileBottomNav = () => {
               {isActive && (
                 <motion.div
                   layoutId="activeBubble"
-                  className="absolute inset-0 bg-teal-500/10 dark:bg-teal-400/10 rounded-2xl z-0"
+                  className="absolute inset-0 bg-amber-600/10 dark:bg-amber-400/15 rounded-2xl z-0"
                   transition={{ type: "spring", stiffness: 300, damping: 25 }}
                 />
               )}
@@ -54,7 +54,7 @@ const MobileBottomNav = () => {
               {isActive && (
                  <motion.div 
                    layoutId="activeIndicator"
-                   className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.8)] z-10" 
+                   className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-amber-600 shadow-[0_0_10px_rgba(217,119,6,0.8)] z-10" 
                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
                  />
               )}
@@ -73,8 +73,8 @@ const MobileBottomNav = () => {
                   size={24} 
                   className={`transition-colors duration-300 ${
                     isActive 
-                      ? 'text-teal-600 dark:text-teal-400 stroke-[2.5px]' 
-                      : 'text-slate-400 dark:text-slate-500 stroke-2 group-hover:text-slate-600 dark:group-hover:text-slate-300'
+                      ? 'text-amber-700 dark:text-amber-400 stroke-[2.5px]' 
+                      : 'text-stone-400 dark:text-stone-500 stroke-2 group-hover:text-stone-600 dark:group-hover:text-stone-300'
                   }`} 
                 />
               </motion.div>
@@ -87,7 +87,7 @@ const MobileBottomNav = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.8 }}
                     transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                    className="absolute bottom-1 text-[10px] font-bold text-teal-700 dark:text-teal-300 tracking-wide z-10"
+                    className="absolute bottom-1 text-[10px] font-bold text-amber-800 dark:text-amber-300 tracking-wide z-10"
                   >
                     {item.label}
                   </motion.span>

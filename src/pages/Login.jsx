@@ -214,7 +214,7 @@ const Login = () => {
       try {
         const FETCH_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
         const JOIN_URL = import.meta.env.VITE_JOINING_SHEET_URL;
-        const JOINING_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbwhFgVoAB4S1cKrU0iDRtCH5B2K-ol2c0RmaaEWXGqv0bdMzs3cs3kPuqOfUAR3KHYZ7g/exec";
+        const JOINING_SUBMIT_URL = import.meta.env.VITE_JOINING_SHEET_URL || "https://script.google.com/macros/s/AKfycbyZJjH0aHn6roRhEJ1hVPmmlJtAVRU74Fc07os6GYjKkb1xdo9wB5peDYRyTPefJn1bnQ/exec";
 
         if (FETCH_URL) {
           fetch(`${FETCH_URL}?sheet=FMS&action=fetch`);

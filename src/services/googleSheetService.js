@@ -1,39 +1,24 @@
+import { uploadToCloudinary } from "../utils/cloudinaryUpload";
+
 export const BASE_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
 
 /**
- * Uploads a file to Google Drive via the Apps Script.
- * @param {string} base64Data - The file content in base64 format (Data URL or raw).
+ * Uploads a file/attachment/image/pdf to Cloudinary.
+ * @param {string|File|Blob} base64Data - The file content (File, Blob, or base64 Data URL).
  * @param {string} fileName - The name of the file.
  * @param {string} mimeType - The MIME type of the file.
- * @param {string} folderId - The Google Drive folder ID.
- * @returns {Promise<Object>} - The JSON response from the script.
+ * @param {string} folderId - Unused, kept for backwards compatibility.
+ * @returns {Promise<Object>} - The JSON response object containing fileUrl and downloadUrl.
  */
 export const uploadFile = async (base64Data, fileName, mimeType, folderId) => {
     try {
-        // Ensure we send raw base64 (strip "data:image/xyz;base64," if present)
-        // This is safer as large payloads with headers sometimes cause issues.
-        const cleanBase64 = base64Data.includes("base64,")
-            ? base64Data.split("base64,")[1]
-            : base64Data;
-
-        const response = await fetch(BASE_URL, {
-            method: "POST",
-            body: new URLSearchParams({
-                action: "uploadFile",
-                base64Data: cleanBase64,
-                fileName,
-                mimeType,
-                folderId,
-            }),
-        });
-
-        const result = await response.json();
-        console.log("Raw Upload Response:", result); // Debug log
-
-        if (!result.success) {
-            throw new Error(result.error || "File upload failed");
-        }
-        return result;
+        const fileUrl = await uploadToCloudinary(base64Data, fileName);
+        return {
+            success: true,
+            fileUrl,
+            downloadUrl: fileUrl,
+            data: { secure_url: fileUrl },
+        };
     } catch (error) {
         console.error("Service Upload Error:", error);
         throw error;

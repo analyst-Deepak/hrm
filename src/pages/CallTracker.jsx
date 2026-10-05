@@ -13,6 +13,7 @@ try {
 
 import { Search, X, Plus, Edit, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { uploadToCloudinary } from "../utils/cloudinaryUpload";
 
 const CallTracker = () => {
   const isSubmittingRef = React.useRef(false);
@@ -109,30 +110,13 @@ const CallTracker = () => {
 
   const uploadFileLink = async (file) => {
     if (!file) return "";
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const base64Data = e.target.result;
-          const response = await fetch(import.meta.env.VITE_GOOGLE_SHEET_URL, {
-            method: "POST",
-            body: new URLSearchParams({
-              action: "uploadFile",
-              base64Data: base64Data,
-              fileName: file.name,
-              mimeType: file.type,
-              folderId: "1wofoM_7jVDj61UV1R5QoxSdQeJhZTOgJMaAOKEqrbvqO-5HUis6qoc3z65K2e2JDIPMZpC7q", // Using generic folder
-            }),
-          });
-          const result = await response.json();
-          resolve(result.success ? result.fileUrl : "");
-        } catch (error) {
-          console.error("Upload error:", error);
-          resolve("");
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    try {
+      const url = await uploadToCloudinary(file);
+      return url || "";
+    } catch (error) {
+      console.error("Upload error:", error);
+      return "";
+    }
   };
 
   // Add tracking for initial load

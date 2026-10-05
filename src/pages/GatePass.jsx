@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, Check, Clock, Calendar, Plus, Image } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { uploadToCloudinary } from '../utils/cloudinaryUpload';
 
 const GatePass = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -200,35 +201,8 @@ const GatePass = () => {
   // Update the uploadImageToDrive function
   const uploadImageToDrive = async (file) => {
     try {
-      // Convert file to base64
-      const base64Data = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-      });
-
-      const response = await fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          action: 'uploadFile',
-          base64Data: base64Data,
-          fileName: file.name,
-          mimeType: file.type,
-          folderId: '1AWeKCYD_hy_9pxT17zoLp-tNgSla9gBi'
-        })
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        return result.fileUrl;
-      } else {
-        throw new Error(result.error || 'Failed to upload image');
-      }
+      const url = await uploadToCloudinary(file);
+      return url;
     } catch (error) {
       console.error('Image upload error:', error);
       throw error;

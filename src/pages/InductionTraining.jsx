@@ -4,7 +4,7 @@ import { Search, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 const InductionTraining = () => {
-    const JOINING_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbwhFgVoAB4S1cKrU0iDRtCH5B2K-ol2c0RmaaEWXGqv0bdMzs3cs3kPuqOfUAR3KHYZ7g/exec";
+    const JOINING_SUBMIT_URL = import.meta.env.VITE_JOINING_SHEET_URL || "https://script.google.com/macros/s/AKfycbyZJjH0aHn6roRhEJ1hVPmmlJtAVRU74Fc07os6GYjKkb1xdo9wB5peDYRyTPefJn1bnQ/exec";
     const INDUCTION_PLANNED_COL_AV = 47;
     const INDUCTION_ACTUAL_COL_AW = 48;
     const FAST_STAGE_TTL_MS = 10 * 60 * 1000;
@@ -102,24 +102,55 @@ const InductionTraining = () => {
         }
 
         const rawData = joiningFmsData;
-        const headers = rawData[6] || [];
-        const dataRows = rawData.slice(7);
+        let headerRowIndex = rawData.findIndex(row =>
+            row && row.some(cell =>
+                cell && (
+                    cell.toString().trim().toUpperCase() === "EMPLOYEE CODE" ||
+                    cell.toString().trim().toUpperCase() === "ID" ||
+                    cell.toString().trim().toLowerCase().includes("candiate name") ||
+                    cell.toString().trim().toLowerCase().includes("candidate name")
+                )
+            )
+        );
+        if (headerRowIndex === -1) headerRowIndex = 5;
+        const headers = rawData[headerRowIndex] || [];
+        const dataRows = rawData.slice(headerRowIndex + 1);
 
-        // Helper to find column index by header name
         const getIndex = (headerName) => {
-            const index = headers.findIndex(
-                (h) => h && h.toString().trim().toLowerCase() === headerName.trim().toLowerCase()
-            );
-            return index;
+            const norm = headerName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const idx = headers.findIndex(h => {
+                if (!h) return false;
+                const hNorm = h.toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+                return hNorm === norm || hNorm.includes(norm) || norm.includes(hNorm);
+            });
+            return idx;
         };
 
-        const idxIndent = getIndex("Indent Number") !== -1 ? getIndex("Indent Number") : 5;
-        const idxName = getIndex("Candidate Name") !== -1 ? getIndex("Candidate Name") : 10;
+        const idxIndent = getIndex("ID") !== -1 ? getIndex("ID") : (getIndex("Indent Number") !== -1 ? getIndex("Indent Number") : 5);
+        const idxName = getIndex("CANDIATE NAME") !== -1 ? getIndex("CANDIATE NAME") : (getIndex("Candidate Name") !== -1 ? getIndex("Candidate Name") : 6);
         const idxDept = getIndex("Department") !== -1 ? getIndex("Department") : 2;
         const idxDesig = getIndex("Designation") !== -1 ? getIndex("Designation") : 14;
-        const idxMobile = getIndex("Contact No") !== -1 ? getIndex("Contact No") : 23;
-        const idxEmail = getIndex("Email Id") !== -1 ? getIndex("Email Id") : 31;
-        const hasSheetValue = (value) => value !== null && value !== undefined && value.toString().trim() !== "";
+        const idxMobile = getIndex("Mobile No") !== -1 ? getIndex("Mobile No") : (getIndex("Contact No") !== -1 ? getIndex("Contact No") : 23);
+        const idxEmail = getIndex("Personal Email") !== -1 ? getIndex("Personal Email") : (getIndex("Email Id") !== -1 ? getIndex("Email Id") : 31);
+        
+        const hasSheetValue = (value) => {
+            if (value === null || value === undefined) return false;
+            const str = value.toString().trim();
+            return (
+                str !== "" &&
+                str !== "0" &&
+                str !== "0.0" &&
+                str !== "00:00:00" &&
+                str !== "1899-12-30" &&
+                str !== "false" &&
+                str !== "FALSE" &&
+                str !== "#N/A" &&
+                str !== "#VALUE!" &&
+                str !== "#REF!" &&
+                str !== "NaN"
+            );
+        };
+
         const completedByIndent = new Map(readFastStageRows(INDUCTION_DONE_KEY).map((item) => [item.indentNumber, item]));
 
         const processed = dataRows.map((row) => {
@@ -128,7 +159,7 @@ const InductionTraining = () => {
             const columnAV = row[INDUCTION_PLANNED_COL_AV];
             const columnAW = row[INDUCTION_ACTUAL_COL_AW];
             const completedRow = completedByIndent.get(indentNumber);
-            const effectiveColumnAW = hasSheetValue(columnAW) ? columnAW : completedRow?.columnAW;
+            const effectiveColumnAW = hasSheetValue(columnAW) ? columnAW : (hasSheetValue(completedRow?.columnAW) ? completedRow?.columnAW : "");
 
             return {
                 indentNumber,
@@ -226,7 +257,7 @@ const InductionTraining = () => {
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
-            const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            const timestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 
             const dataArray = [
                 selectedCandidate.indentNumber,
