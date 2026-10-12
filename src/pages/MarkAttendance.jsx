@@ -1119,18 +1119,18 @@ const MarkAttendance = () => {
   };
 
   return (
-    <div className="page-content space-y-5 p-4 sm:p-6">
-      <section className="relative overflow-visible rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+    <div className="page-content space-y-4 p-3.5 pb-24 sm:space-y-5 sm:p-6 sm:pb-6 max-w-full overflow-x-hidden">
+      <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-teal-500 via-blue-500 to-indigo-500" />
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
+          <div className="min-w-0">
             <p className="text-[11px] font-black uppercase tracking-[0.28em] text-teal-600">Outstation Attendance</p>
-            <h1 className="mt-2 text-2xl font-black text-slate-950">Mark Attendance</h1>
-            <p className="mt-1 text-sm font-semibold text-slate-500">
+            <h1 className="mt-2 text-xl sm:text-2xl font-black text-slate-950">Mark Attendance</h1>
+            <p className="mt-1 text-xs sm:text-sm font-semibold text-slate-500">
               Attendance tab se live IN/OUT records aur location based marking.
             </p>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex flex-col gap-2 sm:flex-row shrink-0">
             <button
               type="button"
               onClick={() => {
@@ -1146,52 +1146,49 @@ const MarkAttendance = () => {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-        <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-          <div className="rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50 to-cyan-50 p-4">
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-600 text-white shadow-sm">
-                  <ShieldCheck size={21} />
+      <section className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm sm:p-5 overflow-hidden">
+        <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr] min-w-0">
+          <div className="rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50 to-cyan-50 p-3.5 sm:p-4 min-w-0 overflow-hidden">
+            <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-600 text-white shadow-sm">
+                  <ShieldCheck size={20} />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-[10px] font-black uppercase tracking-widest text-teal-700">Location Guard</p>
-                  <h2 className="text-lg font-black text-slate-950">{punchPersonName || "User"}</h2>
-
+                  <h2 className="truncate text-base sm:text-lg font-black text-slate-950">{punchPersonName || "User"}</h2>
                 </div>
               </div>
-              <span className={`rounded-full px-3 py-1 text-xs font-black ${nextStatus === "IN" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+              <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black ${nextStatus === "IN" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
                 Next: {nextStatus}
               </span>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="hidden rounded-xl border border-white/70 bg-white/80 p-3">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+              <div className="hidden rounded-xl border border-white/70 bg-white/80 p-3 min-w-0">
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Allowed Range</p>
-                <p className="mt-1 text-xl font-black text-slate-950">
+                <p className="mt-1 text-lg sm:text-xl font-black text-slate-950">
                   {locationRule.requiresLocationMatch ? `${locationRule.rangeMeters}m` : "Anywhere"}
                 </p>
-                <p className="text-[11px] font-bold text-slate-500">{locationRule.source || "Not configured"}</p>
+                <p className="text-[11px] font-bold text-slate-500 truncate">{locationRule.source || "Not configured"}</p>
               </div>
-              <div className="rounded-xl border border-white/70 bg-white/80 p-3">
+              <div className="rounded-xl border border-white/70 bg-white/80 p-3 min-w-0">
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Today IN</p>
-                <p className="mt-1 text-xl font-black text-slate-950">{myTodayRecord?.inTime || "-"}</p>
+                <p className="mt-1 text-lg sm:text-xl font-black text-slate-950 truncate">{myTodayRecord?.inTime || "-"}</p>
                 <p className="text-[11px] font-bold text-slate-500">Current day</p>
               </div>
-              <div className="rounded-xl border border-white/70 bg-white/80 p-3">
+              <div className="rounded-xl border border-white/70 bg-white/80 p-3 min-w-0">
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Today OUT</p>
-                <p className="mt-1 text-xl font-black text-slate-950">{myTodayRecord?.outTime || "-"}</p>
+                <p className="mt-1 text-lg sm:text-xl font-black text-slate-950 truncate">{myTodayRecord?.outTime || "-"}</p>
                 <p className="text-[11px] font-bold text-slate-500">Current day</p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-
-
-            <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4 min-w-0 overflow-hidden">
+            <div className="rounded-xl border border-slate-200 bg-white p-3 min-w-0 overflow-hidden">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-2.5 min-w-0 flex-1">
                   <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                     locationCheck?.status === "inside"
                       ? "bg-emerald-100 text-emerald-700"
@@ -1201,15 +1198,15 @@ const MarkAttendance = () => {
                   }`}>
                     <LocateFixed size={18} />
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-black text-slate-800">{locationCheck?.message || "Location is not ready yet"}</p>
-                    <p className="mt-0.5 text-xs font-semibold text-slate-500">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-black text-slate-800 break-words">{locationCheck?.message || "Location is not ready yet"}</p>
+                    <p className="mt-0.5 text-xs font-semibold text-slate-500 break-words">
                       {locationRule.requiresLocationMatch
                         ? `In Office users must be within ${locationRule.rangeMeters}m to mark attendance.`
                         : "Out of Office users can punch from anywhere."}
                     </p>
                     {rawLocation?.address && (
-                      <p className="mt-1 text-xs text-slate-500 truncate" title={rawLocation.address}>
+                      <p className="mt-1 text-xs text-slate-500 break-words line-clamp-2" title={rawLocation.address}>
                         📍 {rawLocation.address}
                       </p>
                     )}
@@ -1220,7 +1217,7 @@ const MarkAttendance = () => {
                   type="button"
                   onClick={() => fetchLiveLocation(true)}
                   disabled={isFetchingLocation}
-                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 transition shadow-sm"
+                  className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 transition shadow-sm w-full sm:w-auto"
                   title="Click to fetch current location again"
                 >
                   <RefreshCw size={13} className={isFetchingLocation ? "animate-spin" : ""} />
@@ -1233,7 +1230,7 @@ const MarkAttendance = () => {
               <button
                 type="button"
                 disabled
-                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-black text-white bg-slate-300 shadow-md cursor-not-allowed"
+                className="mt-3.5 flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-black text-white bg-slate-300 shadow-md cursor-not-allowed"
               >
                 <RefreshCw size={18} className="animate-spin" />
                 Syncing status...
@@ -1243,7 +1240,7 @@ const MarkAttendance = () => {
                 type="button"
                 onClick={handleMarkAttendance}
                 disabled={marking}
-                className={`mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 ${
+                className={`mt-3.5 flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 active:translate-y-0 ${
                   nextStatus === "IN"
                     ? "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-100"
                     : "bg-gradient-to-r from-rose-600 to-orange-500 shadow-rose-100"
