@@ -9,7 +9,7 @@ import toast from "react-hot-toast";
 import useAuthStore from "../store/authStore";
 
 const OUTSTATION_SCRIPT_URL = import.meta.env.VITE_OUTSTATION_SHEET_URL;
-const OUTSTATION_SPREADSHEET_ID = "1WTT8ZQhtf1yeSChNn2uJeW5Tz2TvYjQLrxhTx5l4Fgw";
+const OUTSTATION_SPREADSHEET_ID = import.meta.env.VITE_OUTSTATION_SPREADSHEET_ID || "1kZgNFm9aNgWAEl2ug0SrYW1vSCCv0h8D7rD7nhhM6q8";
 const ATTENDANCE_SHEET_NAME = "Attendance";
 const MASTER_SHEET_NAME = "Master";
 const DEFAULT_ALLOWED_RADIUS_METERS = 100;
@@ -198,6 +198,7 @@ const getCurrentUserName = (user = {}) =>
       "Employee Name",
       "Name",
       "name",
+      "_displayName",
       "User Name",
       "Username",
       "username",
@@ -209,11 +210,13 @@ const getUserAliases = (user = {}) =>
   [
     getCurrentUserName(user),
     user._authUsername,
+    user._displayName,
     user["User Name"],
     user.Username,
     user.username,
     user["Sales Person Name"],
     user["Person Name"],
+    user["Employee Name"],
     user.Name,
     user.name,
   ]
@@ -253,31 +256,37 @@ const normalizeMasterRows = (rows = []) =>
       return name && name !== "sales person name";
     });
 
+const DEFAULT_OFFICE_LATITUDE = 20.9765551;
+const DEFAULT_OFFICE_LONGITUDE = 81.7077815;
+
 const getUserLocationRule = (user = {}, masterUsers = [], matchedMasterUser = null) => {
   const masterUser = matchedMasterUser || getMatchedMasterUser(user, masterUsers);
-  const employeeType = normalize(masterUser?.employeeType);
-  const isOutOfOffice = employeeType.includes("out") && employeeType.includes("office");
 
-  if (isOutOfOffice) {
-    return {
-      latitude: null,
-      longitude: null,
-      rangeMeters: masterUser?.rangeMeters || DEFAULT_ALLOWED_RADIUS_METERS,
-      source: "Out Off Office",
-      employeeType: masterUser?.employeeType || "Out Off Office",
-      requiresLocationMatch: false,
-    };
-  }
+  if (masterUser) {
+    const employeeType = normalize(masterUser.employeeType);
+    const isOutOfOffice = employeeType.includes("out") && employeeType.includes("office");
 
-  if (masterUser && masterUser.latitude !== null && masterUser.longitude !== null) {
-    return {
-      latitude: masterUser.latitude,
-      longitude: masterUser.longitude,
-      rangeMeters: masterUser.rangeMeters || DEFAULT_ALLOWED_RADIUS_METERS,
-      source: "Master",
-      employeeType: masterUser.employeeType || "In Office",
-      requiresLocationMatch: true,
-    };
+    if (isOutOfOffice) {
+      return {
+        latitude: null,
+        longitude: null,
+        rangeMeters: masterUser.rangeMeters || DEFAULT_ALLOWED_RADIUS_METERS,
+        source: "Out Off Office",
+        employeeType: masterUser.employeeType || "Out Off Office",
+        requiresLocationMatch: false,
+      };
+    }
+
+    if (masterUser.latitude !== null && masterUser.longitude !== null) {
+      return {
+        latitude: masterUser.latitude,
+        longitude: masterUser.longitude,
+        rangeMeters: masterUser.rangeMeters || DEFAULT_ALLOWED_RADIUS_METERS,
+        source: "Master",
+        employeeType: masterUser.employeeType || "In Office",
+        requiresLocationMatch: true,
+      };
+    }
   }
 
   const profileLatitude = parseNumberOrNull(pickFirst(user, ["latitude", "Latitude", "lat", "Lat"]));
@@ -295,12 +304,18 @@ const getUserLocationRule = (user = {}, masterUsers = [], matchedMasterUser = nu
     };
   }
 
+  // Fallback to company office coordinates from Master or default
+  const defaultMasterRow = (masterUsers || []).find((row) => row.latitude !== null && row.longitude !== null);
+  const officeLat = defaultMasterRow?.latitude ?? DEFAULT_OFFICE_LATITUDE;
+  const officeLng = defaultMasterRow?.longitude ?? DEFAULT_OFFICE_LONGITUDE;
+  const officeRange = defaultMasterRow?.rangeMeters ?? DEFAULT_ALLOWED_RADIUS_METERS;
+
   return {
-    latitude: null,
-    longitude: null,
-    rangeMeters: DEFAULT_ALLOWED_RADIUS_METERS,
-    source: masterUser ? "Master" : "",
-    employeeType: masterUser?.employeeType || "",
+    latitude: officeLat,
+    longitude: officeLng,
+    rangeMeters: officeRange,
+    source: masterUser ? "Office Master" : "Office Location",
+    employeeType: masterUser?.employeeType || "In Office",
     requiresLocationMatch: true,
   };
 };
@@ -320,18 +335,48 @@ const haversineDistanceMeters = (from, to) => {
   return radius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-const getBrowserPosition = () =>
+const formatGeolocationError = (err) => {
+  if (!err) return "Location check failed.";
+  if (err.code === 1 || err.name === "NotAllowedError" || String(err.message || "").toLowerCase().includes("denied")) {
+    return "Location permission band hai. Browser ke Lock/Settings icon par click karke Location allow karein.";
+  }
+  if (err.code === 2 || String(err.message || "").toLowerCase().includes("unavailable")) {
+    return "Device GPS / Location band hai. Device settings me jakar Location ON karein.";
+  }
+  if (err.code === 3 || String(err.message || "").toLowerCase().includes("timeout")) {
+    return "GPS signal weak hai (Timeout). Kripya 'Fetch Location' button dabayein.";
+  }
+  return err.message || "Location fetch nahi ho saki. Dobara try karein.";
+};
+
+const getBrowserPosition = (options = {}) =>
   new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       reject(new Error("Browser location support nahi kar raha hai"));
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 0,
-    });
+    navigator.geolocation.getCurrentPosition(
+      resolve,
+      (highAccError) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          (lowAccError) => {
+            reject(lowAccError || highAccError);
+          },
+          {
+            enableHighAccuracy: false,
+            timeout: options.fallbackTimeout || 10000,
+            maximumAge: options.fallbackMaxAge || 300000,
+          }
+        );
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: options.timeout || 10000,
+        maximumAge: options.maximumAge || 15000,
+      }
+    );
   });
 
 const reverseGeocode = async (latitude, longitude) => {
@@ -509,6 +554,50 @@ const MarkAttendance = () => {
     [currentUser, masterUsers, matchedMasterUser]
   );
 
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+
+  const fetchLiveLocation = async (showToast = false) => {
+    if (!navigator.geolocation) {
+      const msg = "Browser location support nahi kar raha hai.";
+      setLocationCheck({ status: "error", message: msg });
+      if (showToast) toast.error(msg);
+      return null;
+    }
+
+    setIsFetchingLocation(true);
+    setLocationCheck((prev) => ({
+      status: "checking",
+      message: "Live location fetch ki ja rahi hai...",
+      distance: prev?.distance,
+    }));
+
+    try {
+      const position = await getBrowserPosition({ timeout: 10000, fallbackTimeout: 10000 });
+      const latitude = Number(position.coords.latitude.toFixed(7));
+      const longitude = Number(position.coords.longitude.toFixed(7));
+      const accuracy = position.coords.accuracy || 0;
+
+      const nextLoc = { latitude, longitude, address: rawLocation?.address || "", accuracy };
+      writeCache(MARK_ATTENDANCE_LOCATION_CACHE_KEY, nextLoc);
+      setRawLocation(nextLoc);
+
+      if (showToast) {
+        toast.success("Location fetch ho gayi!");
+      }
+      return nextLoc;
+    } catch (err) {
+      console.error("fetchLiveLocation error:", err);
+      const friendlyMsg = formatGeolocationError(err);
+      setLocationCheck({ status: "error", message: friendlyMsg });
+      if (showToast) {
+        toast.error(friendlyMsg);
+      }
+      return null;
+    } finally {
+      setIsFetchingLocation(false);
+    }
+  };
+
   const fetchData = async (options = {}) => {
     const silent = options?.silent === true;
     if (!silent) setLoading(true);
@@ -648,7 +737,7 @@ const MarkAttendance = () => {
 
   useEffect(() => {
     if (!navigator.geolocation) {
-      setLocationCheck({ status: "error", message: "Browser location is not supported." });
+      setLocationCheck({ status: "error", message: "Browser location support nahi kar raha hai." });
       return;
     }
 
@@ -665,7 +754,6 @@ const MarkAttendance = () => {
         if (prev && prev.accuracy && prev.accuracy < 100 && accuracy > 500) {
           return prev;
         }
-        // Keep address if moved less than ~50m (approx 0.0004 degrees) to avoid clearing and re-fetching
         const latDiff = prev ? Math.abs(prev.latitude - latitude) : 1;
         const lngDiff = prev ? Math.abs(prev.longitude - longitude) : 1;
         const address = (latDiff < 0.0004 && lngDiff < 0.0004) ? (prev?.address || "") : "";
@@ -678,45 +766,27 @@ const MarkAttendance = () => {
 
     const handleError = (err) => {
       if (!active) return;
-      
-      // If high accuracy times out, immediately try a low accuracy check to avoid timeout errors
-      if (err.code === 3 || err.message?.includes("Timeout")) {
-        navigator.geolocation.getCurrentPosition(
-          handleUpdate,
-          (fallbackErr) => {
-            if (!active) return;
-            setLocationCheck((current) =>
-              current?.status === "inside" || current?.status === "outside"
-                ? current
-                : { status: "error", message: fallbackErr.message || "Location check failed." }
-            );
-          },
-          {
-            enableHighAccuracy: false,
-            timeout: 10000,
-            maximumAge: 60000,
-          }
-        );
-        return;
-      }
-
-      setLocationCheck((current) =>
-        current?.status === "inside" || current?.status === "outside"
-          ? current
-          : { status: "error", message: err.message || "Location check failed." }
-      );
+      setRawLocation((currentRaw) => {
+        if (!currentRaw || currentRaw.latitude === undefined) {
+          const friendly = formatGeolocationError(err);
+          setLocationCheck({ status: "error", message: friendly });
+        }
+        return currentRaw;
+      });
     };
 
+    // Fast initial check (network/cached)
     navigator.geolocation.getCurrentPosition(handleUpdate, handleError, {
       enableHighAccuracy: false,
-      timeout: 5000,
-      maximumAge: 300000,
+      timeout: 10000,
+      maximumAge: 120000,
     });
 
+    // Continuous watch with 30s timeout to prevent rapid timeout cycles
     const watchId = navigator.geolocation.watchPosition(handleUpdate, handleError, {
       enableHighAccuracy: true,
-      timeout: 8000,
       maximumAge: 30000,
+      timeout: 30000,
     });
 
     return () => {
@@ -747,7 +817,9 @@ const MarkAttendance = () => {
 
   useEffect(() => {
     if (!locationRule.source) {
-      if (!rawLocation) {
+      if (initialFetchDone) {
+        setLocationCheck({ status: "error", message: "User master sheet me configured nahi hai." });
+      } else if (!rawLocation) {
         setLocationCheck({ status: "checking", message: "Checking location..." });
       } else {
         setLocationCheck({ status: "checking", message: "Fetching user settings..." });
@@ -866,26 +938,30 @@ const MarkAttendance = () => {
       return;
     }
  
+    let activeLoc = rawLocation;
+
     // In Office users are geofenced; Out Off Office users skip these checks and
     // have their live GPS fetched below so their real location is still stored.
     if (locationRule.requiresLocationMatch) {
-      if (!locationCheck || locationCheck.status === "checking") {
-        toast.error("Location is still being checked. Please try again in a moment.");
+      if (!activeLoc || activeLoc.latitude === undefined || locationCheck?.status === "error" || locationCheck?.status === "checking") {
+        toast.loading("Live location fetch ki ja rahi hai...", { id: "punch-loc-fetch" });
+        activeLoc = await fetchLiveLocation(false);
+        toast.dismiss("punch-loc-fetch");
+      }
+
+      if (!activeLoc || activeLoc.latitude === undefined || activeLoc.longitude === undefined) {
+        toast.error(locationCheck?.message || "Location fetch nahi ho saki. Kripya GPS/Permission check karein.");
         return;
       }
 
-      if (locationCheck.status === "outside") {
-        toast.error(`You are outside the allowed range (${locationCheck.distance}m / ${locationRule.rangeMeters}m). Attendance was not marked.`);
-        return;
-      }
+      const dist = haversineDistanceMeters(
+        { latitude: activeLoc.latitude, longitude: activeLoc.longitude },
+        { latitude: locationRule.latitude, longitude: locationRule.longitude }
+      );
+      const roundedDist = Math.round(dist);
 
-      if (locationCheck.status === "error") {
-        toast.error(locationCheck.message || "Location check failed.");
-        return;
-      }
-
-      if (locationCheck.latitude === undefined || locationCheck.longitude === undefined) {
-        toast.error("Location is not ready. Please try again.");
+      if (dist > locationRule.rangeMeters) {
+        toast.error(`Aap allowed range se bahar hain (${roundedDist}m / ${locationRule.rangeMeters}m). Attendance mark nahi ho saki.`);
         return;
       }
     }
@@ -934,8 +1010,8 @@ const MarkAttendance = () => {
           return;
         }
       }
-      let latitude = locationCheck?.latitude;
-      let longitude = locationCheck?.longitude;
+      let latitude = activeLoc?.latitude ?? locationCheck?.latitude;
+      let longitude = activeLoc?.longitude ?? locationCheck?.longitude;
 
       // Out Off Office users have no warm geofence lock, so actively fetch their
       // live GPS here and store the real coordinates instead of "Out of Office (No GPS)".
@@ -948,16 +1024,7 @@ const MarkAttendance = () => {
           latitude = Number(position.coords.latitude.toFixed(7));
           longitude = Number(position.coords.longitude.toFixed(7));
         } catch (locationError) {
-          // Force GPS: block punching with GPS off / permission denied.
-          const code = locationError?.code;
-          const message =
-            code === 1
-              ? "Location permission band hai. Mobile settings me GPS/Location allow karein, phir dobara try karein."
-              : code === 2
-                ? "GPS off hai. Location on karke dobara try karein."
-                : code === 3
-                  ? "GPS signal nahi mil raha. Khuli jagah jaakar dobara try karein."
-                  : "Location fetch nahi ho payi. GPS on karke dobara try karein.";
+          const message = formatGeolocationError(locationError);
           toast.error(message);
           return;
         }
@@ -1066,10 +1133,13 @@ const MarkAttendance = () => {
           <div className="flex flex-col gap-2 sm:flex-row">
             <button
               type="button"
-              onClick={fetchData}
+              onClick={() => {
+                fetchLiveLocation(false);
+                fetchData();
+              }}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50"
             >
-              <RefreshCw size={17} className={loading ? "animate-spin" : ""} />
+              <RefreshCw size={17} className={loading || isFetchingLocation ? "animate-spin" : ""} />
               Refresh
             </button>
           </div>
@@ -1120,24 +1190,42 @@ const MarkAttendance = () => {
 
 
             <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
-              <div className="flex items-start gap-3">
-                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-                  locationCheck?.status === "inside"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : locationCheck?.status === "outside" || locationCheck?.status === "error"
-                      ? "bg-rose-100 text-rose-700"
-                      : "bg-indigo-100 text-indigo-700"
-                }`}>
-                  <LocateFixed size={18} />
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                    locationCheck?.status === "inside"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : locationCheck?.status === "outside" || locationCheck?.status === "error"
+                        ? "bg-rose-100 text-rose-700"
+                        : "bg-indigo-100 text-indigo-700"
+                  }`}>
+                    <LocateFixed size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-black text-slate-800">{locationCheck?.message || "Location is not ready yet"}</p>
+                    <p className="mt-0.5 text-xs font-semibold text-slate-500">
+                      {locationRule.requiresLocationMatch
+                        ? `In Office users must be within ${locationRule.rangeMeters}m to mark attendance.`
+                        : "Out of Office users can punch from anywhere."}
+                    </p>
+                    {rawLocation?.address && (
+                      <p className="mt-1 text-xs text-slate-500 truncate" title={rawLocation.address}>
+                        📍 {rawLocation.address}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-black text-slate-800">{locationCheck?.message || "Location is not ready yet"}</p>
-                  <p className="mt-0.5 text-xs font-semibold text-slate-500">
-                    {locationRule.requiresLocationMatch
-                      ? `In Office users must be within ${locationRule.rangeMeters}m to mark attendance.`
-                      : "Out of Office users can punch from anywhere."}
-                  </p>
-                </div>
+
+                <button
+                  type="button"
+                  onClick={() => fetchLiveLocation(true)}
+                  disabled={isFetchingLocation}
+                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 transition shadow-sm"
+                  title="Click to fetch current location again"
+                >
+                  <RefreshCw size={13} className={isFetchingLocation ? "animate-spin" : ""} />
+                  {isFetchingLocation ? "Fetching..." : "Fetch Location"}
+                </button>
               </div>
             </div>
 

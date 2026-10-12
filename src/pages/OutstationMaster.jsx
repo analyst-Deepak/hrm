@@ -13,7 +13,7 @@ import {
 import toast from "react-hot-toast";
 
 const OUTSTATION_SCRIPT_URL = import.meta.env.VITE_OUTSTATION_SHEET_URL;
-const OUTSTATION_SPREADSHEET_ID = "1WTT8ZQhtf1yeSChNn2uJeW5Tz2TvYjQLrxhTx5l4Fgw";
+const OUTSTATION_SPREADSHEET_ID = import.meta.env.VITE_OUTSTATION_SPREADSHEET_ID || "1kZgNFm9aNgWAEl2ug0SrYW1vSCCv0h8D7rD7nhhM6q8";
 const MASTER_SHEET_NAME = "Master";
 const MASTER_HEADERS = [
   "Person Name",

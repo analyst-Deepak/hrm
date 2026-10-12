@@ -173,7 +173,8 @@ const Layout = () => {
       if (isCacheValid) return;
 
       try {
-        const url = `https://docs.google.com/spreadsheets/d/1WTT8ZQhtf1yeSChNn2uJeW5Tz2TvYjQLrxhTx5l4Fgw/gviz/tq?tqx=out:json&sheet=Master&cb=${Date.now()}`;
+        const spreadsheetId = import.meta.env.VITE_OUTSTATION_SPREADSHEET_ID || "1kZgNFm9aNgWAEl2ug0SrYW1vSCCv0h8D7rD7nhhM6q8";
+        const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=Master&cb=${Date.now()}`;
         const response = await fetch(url);
         if (!response.ok) return;
         const text = await response.text();

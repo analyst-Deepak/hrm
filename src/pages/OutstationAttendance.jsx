@@ -3,7 +3,7 @@ import { Search, Download, X, Filter, User, ChevronDown, CalendarDays, Table2, C
 import XLSX from 'xlsx-js-style';
 
 const OUTSTATION_SCRIPT_URL = import.meta.env.VITE_OUTSTATION_SHEET_URL;
-const OUTSTATION_SPREADSHEET_ID = '1WTT8ZQhtf1yeSChNn2uJeW5Tz2TvYjQLrxhTx5l4Fgw';
+const OUTSTATION_SPREADSHEET_ID = import.meta.env.VITE_OUTSTATION_SPREADSHEET_ID || '1kZgNFm9aNgWAEl2ug0SrYW1vSCCv0h8D7rD7nhhM6q8';
 const LEAVE_API_URL = import.meta.env.VITE_LEAVE_REQUEST_SHEET_URL;
 const LEAVING_API_URL = import.meta.env.VITE_LEAVING_SHEET_URL;
 const LEAVE_SHEET_NAME = 'FMS';
